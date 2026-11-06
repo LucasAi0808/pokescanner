@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { GradingError } from "./errors";
 
-/** Översätter SDK-fel till svenska, användarvänliga fel. Ordningen är mest specifik först. */
+/** Maps SDK errors to user-friendly errors. Ordered from most to least specific. */
 export function toGradingError(err: unknown): GradingError {
   if (err instanceof GradingError) return err;
   if (err instanceof Anthropic.APIUserAbortError) return new GradingError("aborted");
@@ -17,13 +17,13 @@ export function toGradingError(err: unknown): GradingError {
     if (err.status === 529) return new GradingError("overloaded");
     return new GradingError("unknown", `HTTP ${err.status ?? "?"}`);
   }
-  // SDK:ns structured-output-parser kastar AnthropicError vid ogiltig JSON/schemamiss.
+  // The SDK throws AnthropicError for invalid JSON or schema mismatches.
   if (err instanceof Anthropic.AnthropicError) return new GradingError("bad_format");
   if (err instanceof DOMException && err.name === "AbortError") return new GradingError("aborted");
   return new GradingError("unknown");
 }
 
-/** Felmeddelanden från API:t innehåller aldrig nyckeln, men vi kortar dem ändå och tar bort allt som liknar en nyckel. */
+/** API error messages never contain the key, but we still shorten them and strip anything that looks like one. */
 function safeDetail(msg: string): string {
   return msg.replace(/sk-ant-[A-Za-z0-9_-]+/g, "sk-ant-…").slice(0, 300);
 }

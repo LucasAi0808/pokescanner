@@ -2,10 +2,10 @@ import type { ImageSlot } from "../grading/types";
 import { analyzeQuality, type QualityReport } from "../quality/checks";
 
 /**
- * Gränser för Claude 4.7 och senare (högupplöst nivå): högst 2 576 px långsida
- * och 4 784 visuella tokens (28×28 px per token). Vi skalar själva till strax
- * under gränsen. Då skalar inte API:t om bilden, och modellens pixelkoordinater
- * gäller exakt den bild som visas i appen.
+ * Limits for Claude 4.7 and later (high-resolution tier): at most 2,576 px on
+ * the long edge and 4,784 visual tokens (28×28 px per token). We resize to just
+ * under the limit ourselves. Then the API does not resize the image, and the
+ * model's pixel coordinates match the exact image shown in the app.
  */
 export const MAX_LONG_EDGE = 2576;
 export const MAX_VISUAL_TOKENS = 4700;
@@ -13,7 +13,7 @@ const ANALYSIS_LONG_EDGE = 1000;
 
 export interface PreparedImage {
   slot: ImageSlot;
-  /** JPEG utan EXIF/GPS, i den storlek som skickas till modellen. */
+  /** JPEG without EXIF/GPS, at the size sent to the model. */
   blob: Blob;
   width: number;
   height: number;
@@ -42,7 +42,7 @@ async function decode(file: Blob): Promise<Decoded> {
       const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
       return { source: bmp, width: bmp.width, height: bmp.height, release: () => bmp.close() };
     } catch {
-      /* t.ex. HEIC i vissa Safari-versioner: prova <img> */
+      /* e.g. HEIC in some Safari versions: fall back to <img> */
     }
   }
   const url = URL.createObjectURL(file);
@@ -52,7 +52,7 @@ async function decode(file: Blob): Promise<Decoded> {
     await img.decode();
   } catch {
     URL.revokeObjectURL(url);
-    throw new Error("Bilden kunde inte läsas. Prova JPEG eller ta bilden med kameran.");
+    throw new Error("The photo could not be read. Try a JPEG or take the photo with the camera.");
   }
   return {
     source: img,
@@ -71,7 +71,7 @@ function canvasOf(w: number, h: number): HTMLCanvasElement {
 
 function toJpeg(c: HTMLCanvasElement, quality = 0.9): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    c.toBlob((b) => (b ? resolve(b) : reject(new Error("Kunde inte koda bilden."))), "image/jpeg", quality),
+    c.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not encode the photo."))), "image/jpeg", quality),
   );
 }
 
@@ -83,7 +83,7 @@ export async function prepareImage(file: Blob, slot: ImageSlot): Promise<Prepare
     const ctx = out.getContext("2d")!;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(d.source, 0, 0, width, height);
-    // Omkodningen via canvas tar bort all EXIF-data, inklusive GPS-position.
+    // Re-encoding via canvas strips all EXIF data, including GPS location.
     const blob = await toJpeg(out);
 
     const s = Math.min(1, ANALYSIS_LONG_EDGE / Math.max(width, height));

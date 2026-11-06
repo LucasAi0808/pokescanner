@@ -1,34 +1,34 @@
 # PokeScanner
 
-Fota ett Pokémonkort med mobilen och få en motiverad, inofficiell uppskattning av vilken grade det kan få, och exakt vad på kortet som drar ner den. Varje fynd pekar ut bild och plats, så att du kan zooma in och kontrollera själv.
+Snap your Pokémon card with your phone and get an explained, unofficial estimate of the grade it could get, plus exactly what on the card pulls it down. Every finding points to a photo and a spot, so you can zoom in and check it yourself.
 
-Gratis, öppen källkod och utan konto. Du använder din egen API-nyckel, som bara finns i minnet medan sidan är öppen.
+Free, open source and no account. You bring your own API key, which only lives in memory while the page is open.
 
-**Prova appen:** [lucasai0808.github.io/pokescanner](https://lucasai0808.github.io/pokescanner/), öppna den i Safari på iPhone och tryck Prova demo om du inte har någon nyckel.
+**Try it:** [lucasai0808.github.io/pokescanner](https://lucasai0808.github.io/pokescanner/). Open it in Safari on your iPhone and tap *Try the demo* if you do not have a key.
 
 <p>
-  <img src="docs/screenshots/06-resultat.png" alt="Resultatsidan med uppskattat intervall 7–8" width="260" />
-  <img src="docs/screenshots/07-resultat-zoom.png" alt="Bildvisaren har zoomat in på en vit prick i baksidans hörn" width="260" />
-  <img src="docs/screenshots/04-kvalitet-blank.png" alt="Kvalitetskontrollen varnar för blänk på framsidan" width="260" />
+  <img src="docs/screenshots/07-booster-reveal.png" alt="A fresh result opens like a booster pack and reveals a 7–8 grade with three stars" width="240" />
+  <img src="docs/screenshots/09-result-zoom.png" alt="The viewer zoomed in on a small white dot on the corner of the back" width="240" />
+  <img src="docs/screenshots/04-glare-warning.png" alt="The photo check warns about glare on the front before anything is sent" width="240" />
 </p>
 
-> Skärmbilderna visar demoläget med ett fiktivt kort som tillhör projektet. Ingen riktig kortbild finns i repot.
+> The screenshots show demo mode with a fictional card made for this project. The repo contains no real card images.
 
-## Vad appen gör
+## What it does
 
-Du fotar fram- och baksidan, och vid behov en närbild eller en bild i snett ljus. Innan något skickas kontrollerar appen bilderna lokalt i webbläsaren: blänk, skärpa, exponering, upplösning och om alla fyra hörn syns. Den säger vilken bild som bör tas om och varför. Samtidigt mäts centreringen direkt i bilden, och ett mått som 60/40 visas bara när mätningen gick att göra tillförlitligt.
+You snap the front and back, and if you want a close-up or a photo in angled light. Before anything is sent, the app checks the photos right in your browser for glare, focus, exposure, resolution and whether all four corners are visible, and tells you which photo to retake and why. It also measures centering directly in the image, and a value such as 60/40 is only shown when the measurement was reliable.
 
-När du trycker **Analysera** skickas bilderna till Claude, som bedömer centrering, hörn, kanter och yta. Resultatet är ett intervall på skalan 1–10 med de viktigaste fynden, var och en märkt som synligt fel, möjlig reflex eller del av kortets tryck, plus en lista över det som inte går att bedöma från bilderna. Om underlaget är för dåligt avstår appen från att ge en grade. Den visar aldrig påhittade sannolikheter, till exempel "70 % chans för PSA 10".
+When you tap **Analyze**, the photos go to Claude, which assesses centering, corners, edges and surface. A fresh result opens like a booster pack: tear it open and the estimate comes out as a rarity card with one to four stars. Below it you get a range on the 1–10 scale with the most important findings, each one labelled as a visible flaw, a possible reflection or part of the card's print, plus a list of what cannot be judged from the photos. If the photos are too poor, the app declines to give a grade. It never shows made-up probabilities such as "70% chance of a PSA 10".
 
-Appen försöker också läsa kortets namn, nummer, set och språk (japanska, engelska med flera). Uppgifterna går att rätta, och okända kort fungerar lika bra. Bedömningar sparas lokalt på enheten, och om du senare skickar in kortet kan du lägga in den faktiska graden och jämföra. Att öppna en sparad bedömning gör inga nya anrop.
+The app also tries to read the card's name, number, set and language (English, Japanese and more). You can correct the details, and unknown cards work just as well. Results are saved on your device, and if you send the card in later you can add the actual grade and compare. Opening a saved result makes no new requests.
 
-## Prova direkt
+## Try it right away
 
-Starta appen och tryck **Prova demo utan nyckel**. Demoläget fyller i bilder på ett fiktivt kort och visar ett förskrivet, tydligt märkt exempelresultat. Ingenting skickas någonstans.
+Open the app and tap **Try the demo**. Demo mode fills in photos of a fictional card and shows a pre-written, clearly labelled example result. Nothing is sent anywhere.
 
-## Snabbstart
+## Quick start
 
-Kräver Node 22.12 eller senare (för testerna rekommenderas Node 24.15 eller senare).
+Requires Node 22.12 or later (Node 24.15 or later is recommended for the tests).
 
 ```bash
 git clone https://github.com/LucasAi0808/pokescanner.git
@@ -37,80 +37,82 @@ npm install
 npm run dev -- --host
 ```
 
-Öppna adressen som Vite skriver ut under `Network`, till exempel `http://192.168.1.23:5173`, i Safari på iPhonen. Telefonen och datorn ska vara på samma wifi. På Windows frågar brandväggen första gången om Node får ta emot anslutningar. Svara ja för privata nätverk.
+Open the address Vite prints under `Network`, for example `http://192.168.1.23:5173`, in Safari on your iPhone. The phone and computer need to be on the same Wi-Fi. On Windows the firewall may ask whether Node can accept connections the first time; allow it for private networks.
 
-Kameran fungerar över vanlig http eftersom appen använder telefonens egen kamera via filväljaren, så du behöver inget certifikat. Vill du ha appen som en ikon på hemskärmen väljer du Dela och sedan Lägg till på hemskärmen i Safari.
+The camera works over plain http because the app uses the phone's own camera through the file picker, so no certificate is needed. To get an icon on your home screen, choose Share and then Add to Home Screen in Safari.
 
-## Din egen API-nyckel
+## Your own API key
 
-PokeScanner använder Anthropics API (Claude) med bildstöd.
+PokeScanner uses Anthropic's API (Claude) with image support.
 
-1. Skapa ett konto och en API-nyckel på [console.anthropic.com](https://console.anthropic.com). Nyckeln börjar med `sk-ant-`.
-2. Tryck **Analysera** i appen. Innan första analysen visas vem som tar emot bilderna, vilken modell som används och en ungefärlig kostnad för just den analysen. Klistra in nyckeln där.
-3. Nyckeln ligger bara i minnet i den öppna fliken. Den sparas inte i webbläsaren, skrivs inte till loggar eller resultat och följer inte med bygget. Laddar du om sidan behöver du klistra in den igen.
+1. Create an account and an API key at [console.anthropic.com](https://console.anthropic.com). The key starts with `sk-ant-`.
+2. Tap **Analyze** in the app. Before the first analysis it shows who receives the photos, which model is used and a rough cost for that specific analysis. Paste your key there.
+3. The key only lives in memory in the open tab. It is not stored in the browser, never written to logs or results and never part of the build. If you reload the page you paste it again.
 
-Kostnaden tas från ditt eget Anthropic-konto enligt deras prislista. En analys med två bilder kostar ungefär 1–3 kr med Claude Opus 5.5 (standard) och ungefär hälften med Claude Sonnet 5.5, som du kan välja i samma dialog. Efter analysen visas faktisk tokenåtgång och uppskattad kostnad.
+The cost is charged to your own Anthropic account at their list price. An analysis with two photos costs roughly $0.10–0.30 with Claude Opus 5.5 (the default) and about half that with Claude Sonnet 5.5, which you can pick in the same dialog. After the analysis the app shows the actual token usage and the estimated cost.
 
-Anropet går direkt från webbläsaren till `api.anthropic.com`, utan någon mellanserver. Bilderna skickas först när du trycker Analysera, och innan dess skalas de ner och kodas om, vilket också tar bort EXIF-data som GPS-position.
+The request goes straight from your browser to `api.anthropic.com`, with no server in between. Photos are only sent when you tap Analyze, and before that they are downscaled and re-encoded, which also strips EXIF data such as your GPS location.
 
-## Hur bedömningen fungerar
+## How the grading works
 
-Bedömningen sker i två lager. Det första körs lokalt i webbläsaren och hittar kortets fyra kanter med en egen, enkel kantdetektion (linjeanpassning per sida), kontrollerar bildkvaliteten och mäter centreringen genom att leta upp ramens innerkant på varje sida. Det andra lagret är modellen, som får bilderna i en storlek som ryms inom Anthropics gränser (högst 2 576 px och 4 784 bildtokens). Då stämmer modellens pixelkoordinater exakt med bilden du ser, och fyndrutorna hamnar rätt när du zoomar.
+The assessment has two layers. The first runs locally in the browser: it finds the four edges of the card with a small edge detector of its own (a line fit per side), checks the photo quality and measures centering by finding the inner edge of the border on every side. The second layer is the model, which receives the photos at a size that fits Anthropic's limits (at most 2,576 px and 4,784 image tokens). That way the model's pixel coordinates match the image you see exactly, and the finding boxes land in the right place when you zoom.
 
-Modellen svarar med strukturerad JSON enligt ett fast schema. Appen validerar svaret och rättar det som går att rätta, till exempel omkastade intervall eller rutor utanför bilden. Svar som inte går att tolka visas som ett begripligt fel i stället för ett halvt resultat. Modellen är instruerad att skilja på fel, reflexer och tryck, att avstå hellre än att gissa och att aldrig ange sannolikheter eller egna centreringstal.
+The model replies with structured JSON that follows a fixed schema. The app validates the reply and fixes what can be fixed, such as a reversed range or boxes outside the image. Replies that cannot be read are shown as a clear error instead of a half result. The model is told to separate flaws, reflections and print features, to abstain rather than guess and never to give probabilities or its own centering numbers.
 
-## Vad foton kan missa
+The stars are a playful summary of the range and nothing more: one star for 1–3, two for 4–6, three for 7–8 and four with holo foil for 9–10.
 
-Ett foto är inte ett kort i handen. Mikrorepor, små tryckpunkter och ytdefekter syns ofta bara i lupp eller i rätt ljusvinkel, och böjning, tjocklek, återförslutna kanter eller om kortet är äkta går inte att bedöma från en bild. Blänk och plastfickor kan både dölja skador och skapa falska. Bedömningen är därför en förhandskoll som hjälper dig att välja vilka kort som är värda att skicka in, inte en ersättning för en riktig gradering.
+## What photos can miss
 
-## Projektstruktur
+A photo is not a card in your hand. Micro scratches, tiny print dots and surface flaws often only show under a loupe or at the right angle, and bending, thickness, trimmed edges or whether the card is genuine cannot be judged from a photo. Glare and sleeves can both hide damage and create false flaws. Think of the result as a first check that helps you decide which cards are worth sending in, not as a replacement for a real grading.
+
+## Project structure
 
 ```
 src/
-  grading/      modellkopplingen: schema, prompt, leverantörer, fel
-  quality/      lokal kvalitetskontroll, kortdetektion och centrering
-  images/       nedskalning och omkodning av bilder
-  storage/      lokal historik i IndexedDB
-  screens/      appens vyer
-  ui/           bildvisaren med zoom och fyndrutor
+  grading/      model connection: schema, prompt, providers, errors
+  quality/      local photo check, card detection and centering
+  images/       downscaling and re-encoding of photos
+  storage/      local history in IndexedDB
+  screens/      the app's views
+  ui/           zoomable viewer, booster pack, holo foil, energy icons
 tests/
-  unit/         Vitest: schema, normalisering, felmappning, bildanalys
-  e2e/          Playwright i WebKit med iPhone-profil och simulerat API
-  smoke/        röktest mot det riktiga API:t (kräver nyckel)
-scripts/        demobilder, ikoner, skärmbilder och nyckelkontroll
+  unit/         Vitest: schema, normalization, error mapping, image analysis
+  e2e/          Playwright in WebKit with an iPhone profile and a simulated API
+  smoke/        smoke test against the real API (needs a key)
+scripts/        demo images, icons, screenshots and the key check
 ```
 
-### Lägga till en annan modell
+### Adding another model
 
-Modellkopplingen är separat från resten av appen. En leverantör implementerar gränssnittet `GradingProvider` i [`src/grading/provider.ts`](src/grading/provider.ts) och registreras i [`src/grading/registry.ts`](src/grading/registry.ts). En lokal bildmodell, till exempel via Ollama på din egen dator, behöver bara ta emot bilderna och returnera samma JSON-schema som Claude (`ModelOutputSchema` i [`src/grading/types.ts`](src/grading/types.ts)). Demoläget i [`src/grading/demo.ts`](src/grading/demo.ts) är ett minimalt exempel på en leverantör.
+The model connection is separate from the rest of the app. A provider implements the `GradingProvider` interface in [`src/grading/provider.ts`](src/grading/provider.ts) and is registered in [`src/grading/registry.ts`](src/grading/registry.ts). A local vision model, for example through Ollama on your own computer, only needs to accept the photos and return the same JSON schema as Claude (`ModelOutputSchema` in [`src/grading/types.ts`](src/grading/types.ts)). Demo mode in [`src/grading/demo.ts`](src/grading/demo.ts) is a minimal example of a provider.
 
-## Tester
+## Tests
 
 ```bash
-npm test            # enhetstester (Vitest)
-npm run test:e2e    # hela flödet i WebKit med iPhone-profil och simulerat API
-npm run build       # bygger och kontrollerar att ingen nyckel hamnat i dist/
+npm test            # unit tests (Vitest)
+npm run test:e2e    # the whole flow in WebKit with an iPhone profile and a simulated API
+npm run build       # builds and checks that no key ended up in dist/
 ```
 
-Första gången e2e-testerna körs behöver Playwright ladda ner WebKit: `npx playwright install webkit`.
+The first time you run the e2e tests, Playwright needs to download WebKit: `npx playwright install webkit`.
 
-E2e-sviten fångar alla anrop till `api.anthropic.com` och svarar med simulerade svar. Den täcker uppladdning, kvalitetsvarningar, samtycke, svarsformat, lokal historik utan nya anrop, radering, ogiltig nyckel (401), avbruten analys, svar i fel format, överbelastat API (529), att modellen avböjer, att modellen avstår och att nyckeln aldrig hamnar i lagring eller loggar.
+The e2e suite intercepts every request to `api.anthropic.com` and answers with simulated replies. It covers upload, photo warnings, consent, the booster reveal, the response format, local history without new requests, deleting, an invalid key (401), a cancelled analysis, a reply in the wrong format, an overloaded API (529), the model declining, the model abstaining, that the whole interface is in English and that the key never ends up in storage or logs.
 
-Röktestet kör samma kod mot det riktiga API:t med demobilderna och kostar ett anrop:
+The smoke test runs the same code against the real API with the demo photos and costs one request:
 
 ```bash
-# PowerShell
-$env:ANTHROPIC_API_KEY="sk-ant-..."; npm run smoke:real
 # bash
 ANTHROPIC_API_KEY=sk-ant-... npm run smoke:real
+# PowerShell
+$env:ANTHROPIC_API_KEY="sk-ant-..."; npm run smoke:real
 ```
 
-## Publicera med GitHub Pages
+## Publishing with GitHub Pages
 
-Repot innehåller ett workflow i [`.github/workflows/pages.yml`](.github/workflows/pages.yml) som bygger och publicerar appen när du pushar till `main`. Slå på det under Settings → Pages → Source: GitHub Actions. Sidan får då https och fungerar på mobilen utan att datorn är igång. Eftersom nyckeln matas in av den som använder sidan finns inga hemligheter i repot eller i bygget.
+The workflow in [`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs the tests, builds the app and publishes it on every push to `main`. Turn it on under Settings → Pages → Source: GitHub Actions. Since the key is entered by whoever uses the page, there are no secrets in the repo or the build.
 
-## Licens och varumärken
+## License and trademarks
 
-Koden är licensierad under [MIT](LICENSE). Typsnitten i `public/fonts/` (Familjen Grotesk, Instrument Serif och JetBrains Mono) är licensierade under SIL Open Font License 1.1, se [`public/fonts/LICENSE-FONTS.txt`](public/fonts/LICENSE-FONTS.txt). Demokortet "Quartzling" och alla bilder i repot är skapade för projektet.
+The code is licensed under [MIT](LICENSE). The fonts in `public/fonts/` (Fredoka, Nunito and JetBrains Mono) are licensed under the SIL Open Font License 1.1, see [`public/fonts/LICENSE-FONTS.txt`](public/fonts/LICENSE-FONTS.txt). The demo card "Quartzling", the logo, the energy icons and all images in the repo were made for this project.
 
-PokeScanner är ett inofficiellt fan-projekt. Pokémon och alla relaterade namn är varumärken som tillhör Nintendo, Creatures, GAME FREAK och The Pokémon Company. Projektet har ingen koppling till dem eller till graderingsbolag som PSA, BGS eller CGC, och bedömningarna är inga officiella betyg.
+PokeScanner is an unofficial fan project. Pokémon and all related names are trademarks of Nintendo, Creatures, GAME FREAK and The Pokémon Company. The project is not affiliated with them or with grading companies such as PSA, BGS or CGC, and its assessments are not official grades.

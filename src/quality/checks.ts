@@ -15,7 +15,7 @@ export interface QualityReport {
   issues: QualityIssue[];
   card: CardQuad | null;
   centering: Centering;
-  /** Analysbildens storlek (koordinater i `card` gäller den). */
+  /** Size of the analysis image (coordinates in `card` refer to it). */
   width: number;
   height: number;
 }
@@ -27,19 +27,19 @@ export interface RGBAImage {
 }
 
 const REGION = [
-  ["övre vänstra", "övre", "övre högra"],
-  ["vänstra", "mitten", "högra"],
-  ["nedre vänstra", "nedre", "nedre högra"],
+  ["upper left", "upper", "upper right"],
+  ["left", "middle", "right"],
+  ["lower left", "lower", "lower right"],
 ] as const;
 
 function regionName(fx: number, fy: number): string {
   const c = Math.min(2, Math.max(0, Math.floor(fx * 3)));
   const r = Math.min(2, Math.max(0, Math.floor(fy * 3)));
   const name = REGION[r]![c]!;
-  return name === "mitten" ? "mitten" : `${name} delen`;
+  return name === "middle" ? "the middle" : `the ${name} part`;
 }
 
-/** Axeljusterad omskrivande rektangel för kortet (eller hela bilden). */
+/** Axis-aligned bounding box of the card (or the whole image). */
 function bounds(q: CardQuad | null, w: number, h: number) {
   if (!q) return { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
   const xs = [q.corners.tl.x, q.corners.tr.x, q.corners.br.x, q.corners.bl.x];
@@ -52,7 +52,7 @@ function bounds(q: CardQuad | null, w: number, h: number) {
   };
 }
 
-/** Största sammanhängande utbrända ytan (blänk). Körs på ett grovt rutnät. */
+/** Largest connected blown-out area (glare). Runs on a coarse grid. */
 export function findGlare(img: RGBAImage, area: ReturnType<typeof bounds>) {
   const cell = 4;
   const gw = Math.floor((area.x1 - area.x0) / cell);
@@ -78,7 +78,7 @@ export function findGlare(img: RGBAImage, area: ReturnType<typeof bounds>) {
       }
     }
   }
-  // Sammanhängande komponenter (4-grannar), iterativ flood fill.
+  // Connected components (4-neighbours), iterative flood fill.
   const seen = new Uint8Array(gw * gh);
   let best = { size: 0, cx: 0, cy: 0 };
   const stack: number[] = [];
@@ -111,7 +111,7 @@ export function findGlare(img: RGBAImage, area: ReturnType<typeof bounds>) {
   };
 }
 
-/** Varians av Laplace-filtret, ett vanligt skärpemått. */
+/** Variance of the Laplacian, a common sharpness measure. */
 export function sharpness(g: Gray, area: ReturnType<typeof bounds>): number {
   const pad = 0.1;
   const x0 = Math.floor(area.x0 + (area.x1 - area.x0) * pad);
@@ -157,8 +157,8 @@ export function analyzeQuality(
     issues.push({
       code: "low_res",
       level: "warn",
-      message: `Låg upplösning (${original.width}×${original.height} px).`,
-      advice: "Ta bilden med kameran i stället för en skärmdump, och gå närmare kortet.",
+      message: `Low resolution (${original.width}×${original.height} px).`,
+      advice: "Take the photo with the camera instead of using a screenshot, and move closer to the card.",
     });
   }
 
@@ -167,9 +167,9 @@ export function analyzeQuality(
       issues.push({
         code: "missing_card",
         level: "warn",
-        message: "Kortets fyra kanter gick inte att hitta i bilden.",
+        message: "Could not find all four edges of the card in the photo.",
         advice:
-          "Lägg kortet på en jämn, mörk och matt yta, se till att alla fyra hörn syns med lite marginal och att kortet inte täcks av fingrar.",
+          "Place the card on a flat, dark, matte surface, make sure all four corners are visible with some margin, and keep fingers off the card.",
       });
     } else {
       const m = 0.01;
@@ -178,14 +178,14 @@ export function analyzeQuality(
         ([, p]) => p.x < img.width * m || p.y < img.height * m || p.x > img.width * (1 - m) || p.y > img.height * (1 - m),
       );
       if (out.length) {
-        const names: Record<string, string> = { tl: "övre vänstra", tr: "övre högra", br: "nedre högra", bl: "nedre vänstra" };
+        const names: Record<string, string> = { tl: "top left", tr: "top right", br: "bottom right", bl: "bottom left" };
         issues.push({
           code: "corner_cut",
           level: "warn",
-          message: `${out.length === 1 ? "Ett hörn" : "Hörn"} verkar ligga utanför eller precis vid bildkanten (${out
+          message: `${out.length === 1 ? "A corner seems" : "Corners seem"} to be outside or right at the edge of the photo (${out
             .map(([k]) => names[k])
             .join(", ")}).`,
-          advice: "Backa telefonen lite så att hela kortet syns med en marginal runt om.",
+          advice: "Move the phone back a little so the whole card is visible with a margin all around.",
         });
       }
       const aspect = card.width / card.height;
@@ -193,16 +193,16 @@ export function analyzeQuality(
         issues.push({
           code: "aspect",
           level: "warn",
-          message: "Kortets form i bilden stämmer inte med ett vanligt kort. Kanske är en del avskuren eller bilden tagen snett.",
-          advice: "Håll telefonen parallellt med kortet, rakt ovanifrån, och se till att hela kortet syns.",
+          message: "The card shape in the photo does not match a standard card. Part of it may be cut off or the photo taken at an angle.",
+          advice: "Hold the phone parallel to the card, straight from above, and make sure the whole card is visible.",
         });
       }
       if (Math.abs(card.angle) > 8) {
         issues.push({
           code: "tilt",
           level: "info",
-          message: "Kortet ligger snett i bilden.",
-          advice: "Det går att analysera, men centreringen mäts bara när kortet ligger nästan rakt.",
+          message: "The card is tilted in the photo.",
+          advice: "It can still be analyzed, but centering is only measured when the card is nearly straight.",
         });
       }
     }
@@ -215,9 +215,9 @@ export function analyzeQuality(
     issues.push({
       code: "glare",
       level: "warn",
-      message: `Blänk döljer ytan i ${regionName(glare.center.fx, glare.center.fy)} (ca ${pct} % av kortet).`,
+      message: `Glare hides the surface in ${regionName(glare.center.fx, glare.center.fy)} (about ${pct}% of the card).`,
       advice:
-        "Ta om bilden utan blixt och vinkla bort ljuskällan. Lägg gärna till en extra bild i snett ljus för att kontrollera ytan.",
+        "Retake the photo without flash and angle the light source away. Consider adding an angled-light photo to check the surface.",
     });
   }
 
@@ -226,8 +226,8 @@ export function analyzeQuality(
     issues.push({
       code: "blur",
       level: "warn",
-      message: "Bilden verkar suddig.",
-      advice: "Håll telefonen stilla, tryck på kortet i kameran för att fokusera och ta om bilden i bättre ljus.",
+      message: "The photo looks blurry.",
+      advice: "Hold the phone still, tap the card in the camera to focus, and retake the photo in better light.",
     });
   }
 
@@ -236,15 +236,15 @@ export function analyzeQuality(
     issues.push({
       code: "dark",
       level: "warn",
-      message: "Bilden är mörk.",
-      advice: "Ta om bilden i jämnt dagsljus eller med en lampa från sidan, utan blixt.",
+      message: "The photo is dark.",
+      advice: "Retake the photo in even daylight or with a lamp from the side, without flash.",
     });
   } else if (lum > 225) {
     issues.push({
       code: "bright",
       level: "warn",
-      message: "Bilden är överexponerad.",
-      advice: "Minska ljuset eller tryck på kortet i kameran och dra ner exponeringen.",
+      message: "The photo is overexposed.",
+      advice: "Reduce the light, or tap the card in the camera and lower the exposure.",
     });
   }
 

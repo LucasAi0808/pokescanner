@@ -14,29 +14,28 @@ export type GradingErrorCode =
   | "unknown";
 
 const MESSAGES: Record<GradingErrorCode, string> = {
-  aborted: "Analysen avbröts. Bilderna ligger kvar och inget sparades.",
+  aborted: "The analysis was cancelled. Your photos are still here and nothing was saved.",
   invalid_key:
-    "API-nyckeln godkändes inte av Anthropic. Kontrollera att du klistrat in hela nyckeln (den börjar med sk-ant-) och att den inte är spärrad.",
-  permission:
-    "Nyckeln saknar behörighet för den här modellen eller funktionen. Kontrollera nyckeln och kontot hos Anthropic.",
+    "Anthropic did not accept the API key. Check that you pasted the whole key (it starts with sk-ant-) and that it has not been revoked.",
+  permission: "The key does not have access to this model or feature. Check the key and your Anthropic account.",
   rate_limit:
-    "För många anrop just nu (rate limit) eller slut på kredit i kontot. Vänta en stund eller kontrollera saldot hos Anthropic.",
-  overloaded: "Anthropic är tillfälligt överbelastat. Försök igen om en liten stund.",
-  server: "Något gick fel hos Anthropic. Försök igen om en stund.",
-  network: "Kunde inte nå Anthropic. Kontrollera internetanslutningen och försök igen.",
-  timeout: "Analysen tog för lång tid och avbröts. Försök igen.",
+    "Too many requests right now (rate limit) or no credit left on the account. Wait a moment or check your balance with Anthropic.",
+  overloaded: "Anthropic is temporarily overloaded. Try again in a little while.",
+  server: "Something went wrong at Anthropic. Try again in a moment.",
+  network: "Could not reach Anthropic. Check your internet connection and try again.",
+  timeout: "The analysis took too long and was stopped. Try again.",
   bad_request:
-    "Anropet godtogs inte av Anthropic. Det kan bero på bildernas storlek eller format. Prova att ta om bilderna.",
-  bad_format:
-    "Modellen svarade i ett format som appen inte kunde läsa. Inget sparades. Försök igen.",
-  refusal: "Modellen avböjde att analysera bilderna. Kontrollera att bilderna visar ett samlarkort.",
-  truncated: "Svaret blev för långt och klipptes av. Försök igen, gärna med färre extrabilder.",
-  unknown: "Ett oväntat fel inträffade. Försök igen.",
+    "Anthropic did not accept the request. It may be the size or format of the photos. Try retaking them.",
+  bad_format: "The model replied in a format the app could not read. Nothing was saved. Try again.",
+  refusal: "The model declined to analyze the photos. Check that they show a trading card.",
+  truncated: "The reply was too long and got cut off. Try again, ideally with fewer extra photos.",
+  unknown: "Something unexpected went wrong. Try again.",
 };
 
 export class GradingError extends Error {
   readonly code: GradingErrorCode;
   readonly retryable: boolean;
+  detail?: string;
   constructor(code: GradingErrorCode, detail?: string) {
     super(MESSAGES[code]);
     this.name = "GradingError";
@@ -44,12 +43,11 @@ export class GradingError extends Error {
     this.retryable = !["invalid_key", "permission", "aborted", "refusal"].includes(code);
     if (detail) this.detail = detail;
   }
-  detail?: string;
 }
 
 /**
- * Gör om vilket fel som helst till ett GradingError utan att ladda SDK:n.
- * SDK-specifika fel översätts redan i `sdk-errors.ts` innan de når hit.
+ * Turns any error into a GradingError without loading the SDK.
+ * SDK-specific errors are already translated in `sdk-errors.ts` before they get here.
  */
 export function asGradingError(err: unknown): GradingError {
   if (err instanceof GradingError) return err;

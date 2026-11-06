@@ -1,39 +1,39 @@
 import { z } from "zod";
 
 /**
- * Två lager:
- * 1. `ModelOutputSchema` är det modellen ombeds svara med (structured outputs).
- *    Det är medvetet "löst" (inga min/max), eftersom JSON-schemat som skickas
- *    till API:t bara stöder en delmängd av begränsningar. Allt är obligatoriskt
- *    men nullbart, vilket structured outputs kräver.
- * 2. `GradingResult` är appens egen, normaliserade form. `normalizeModelOutput`
- *    klipper värden, kastar ogiltiga fynd och gör resultatet internt konsekvent.
+ * Two layers:
+ * 1. `ModelOutputSchema` is what the model is asked to return (structured outputs).
+ *    It is deliberately loose (no min/max), because the JSON schema sent to the
+ *    API only supports a subset of constraints. Every field is required but
+ *    nullable, which structured outputs requires.
+ * 2. `GradingResult` is the app's own normalized shape. `normalizeModelOutput`
+ *    clamps values, drops invalid findings and makes the result consistent.
  */
 
 export const IMAGE_SLOTS = ["front", "back", "closeup", "raking"] as const;
 export type ImageSlot = (typeof IMAGE_SLOTS)[number];
 
 export const SLOT_LABELS: Record<ImageSlot, string> = {
-  front: "Framsida",
-  back: "Baksida",
-  closeup: "Närbild",
-  raking: "Snett ljus",
+  front: "Front",
+  back: "Back",
+  closeup: "Close-up",
+  raking: "Angled light",
 };
 
 export const LANGUAGES = {
-  ja: "Japanska",
-  en: "Engelska",
-  ko: "Koreanska",
-  zh: "Kinesiska",
-  de: "Tyska",
-  fr: "Franska",
-  it: "Italienska",
-  es: "Spanska",
-  pt: "Portugisiska",
-  nl: "Nederländska",
-  sv: "Svenska",
-  other: "Annat språk",
-  unknown: "Okänt",
+  ja: "Japanese",
+  en: "English",
+  ko: "Korean",
+  zh: "Chinese",
+  de: "German",
+  fr: "French",
+  it: "Italian",
+  es: "Spanish",
+  pt: "Portuguese",
+  nl: "Dutch",
+  sv: "Swedish",
+  other: "Other language",
+  unknown: "Unknown",
 } as const;
 export type CardLanguage = keyof typeof LANGUAGES;
 const languageKeys = Object.keys(LANGUAGES) as [CardLanguage, ...CardLanguage[]];
@@ -42,15 +42,15 @@ const Confidence = z.enum(["low", "medium", "high"]);
 export type Confidence = z.infer<typeof Confidence>;
 
 const ModelBox = z.object({
-  x: z.number().describe("Vänsterkant i pixlar i den bild fyndet gäller"),
-  y: z.number().describe("Överkant i pixlar"),
+  x: z.number().describe("Left edge in pixels in the image the finding refers to"),
+  y: z.number().describe("Top edge in pixels"),
   width: z.number(),
   height: z.number(),
 });
 
 const ModelSubgrade = z.object({
-  assessment: z.string().describe("Kort motivering på svenska"),
-  low: z.number().nullable().describe("Lägsta rimliga delbetyg 1-10, eller null om det inte går att bedöma"),
+  assessment: z.string().describe("Short justification in English"),
+  low: z.number().nullable().describe("Lowest reasonable subgrade 1-10, or null if it cannot be assessed"),
   high: z.number().nullable(),
   confidence: Confidence,
 });
@@ -76,13 +76,13 @@ export const ModelOutputSchema = z.object({
   }),
   findings: z.array(
     z.object({
-      image: z.string().describe("Bildens id, t.ex. front eller back"),
+      image: z.string().describe("Image id, e.g. front or back"),
       kind: z.enum(FINDING_KINDS),
       category: z.enum(FINDING_CATEGORIES),
       severity: z.enum(SEVERITIES),
       title: z.string(),
       description: z.string(),
-      location: z.string().describe("Plats i ord, t.ex. 'övre vänstra hörnet'"),
+      location: z.string().describe("Location in words, e.g. 'top left corner of the back'"),
       box: ModelBox.nullable(),
     }),
   ),
@@ -100,10 +100,10 @@ export const ModelOutputSchema = z.object({
 });
 export type ModelOutput = z.infer<typeof ModelOutputSchema>;
 
-/* ---------- Appens normaliserade form ---------- */
+/* ---------- Normalized app shape ---------- */
 
 export interface NormBox {
-  /** 0–1 relativt bildens bredd/höjd */
+  /** 0–1 relative to the image width/height */
   x: number;
   y: number;
   w: number;
@@ -153,7 +153,7 @@ export interface Usage {
   outputTokens: number;
 }
 
-/** Bild som skickas till en leverantör. */
+/** Image sent to a provider. */
 export interface ProviderImage {
   slot: ImageSlot;
   mediaType: "image/jpeg";
@@ -162,10 +162,10 @@ export interface ProviderImage {
   height: number;
 }
 
-/* ---------- Normalisering ---------- */
+/* ---------- Normalization ---------- */
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-/** Betyg 1–10 i halvsteg. */
+/** Grade 1–10 in half steps. */
 const toGrade = (v: number) => clamp(Math.round(v * 2) / 2, 1, 10);
 
 function normRange(low: number | null, high: number | null): { low: number; high: number } | null {
@@ -188,7 +188,7 @@ export function normalizeModelOutput(
   const findings: Finding[] = [];
   raw.findings.forEach((f, idx) => {
     const slot = f.image.trim().toLowerCase();
-    if (!isSlot(slot) || !dims.has(slot)) return; // fynd på en bild vi inte skickade
+    if (!isSlot(slot) || !dims.has(slot)) return; // finding on an image we did not send
     const d = dims.get(slot)!;
     let box: NormBox | null = null;
     if (f.box && [f.box.x, f.box.y, f.box.width, f.box.height].every(Number.isFinite)) {
@@ -213,7 +213,7 @@ export function normalizeModelOutput(
 
   const abstained = raw.status === "abstained";
   const gradeRange = abstained ? null : normRange(raw.grade_low, raw.grade_high);
-  // En "graded" utan intervall är inte ett betyg: behandla som avstått.
+  // A "graded" result without a range is not a grade: treat it as abstained.
   const status = abstained || !gradeRange ? "abstained" : "graded";
 
   const sub = (s: ModelOutput["subgrades"]["corners"]): Subgrade => ({
@@ -226,7 +226,7 @@ export function normalizeModelOutput(
     status,
     abstainReason:
       status === "abstained"
-        ? raw.abstain_reason?.trim() || "Underlaget räckte inte för en bedömning."
+        ? raw.abstain_reason?.trim() || "The photos were not good enough for an assessment."
         : null,
     gradeRange: status === "graded" ? gradeRange : null,
     summary: raw.summary.trim(),

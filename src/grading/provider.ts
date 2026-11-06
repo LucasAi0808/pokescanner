@@ -1,19 +1,19 @@
 import type { GradingResult, ProviderImage, Usage } from "./types";
 
 /**
- * Gränssnitt för en bildmodell som kan gradera. Lägg till en lokal modell
- * (t.ex. en vision-modell via Ollama) genom att implementera detta och
- * registrera den i `src/grading/registry.ts`.
+ * Interface for an image model that can grade cards. Add a local model
+ * (e.g. a vision model via Ollama) by implementing this and registering it
+ * in `src/grading/registry.ts`.
  */
 export interface GradingProvider {
   id: string;
-  /** Visas i UI:t, t.ex. "Anthropic Claude" */
+  /** Shown in the UI, e.g. "Anthropic Claude" */
   label: string;
-  /** Vem som tar emot bilderna, visas före första analysen. */
+  /** Who receives the photos, shown before the first analysis. */
   recipient: string;
-  /** Kräver leverantören en API-nyckel från användaren? */
+  /** Does the provider need an API key from the user? */
   needsKey: boolean;
-  /** Kort text om kostnad som visas före första analysen. */
+  /** Short cost note shown before the first analysis. */
   costNote: string;
   analyze(request: AnalyzeRequest, signal: AbortSignal): Promise<AnalyzeResponse>;
 }
@@ -27,14 +27,14 @@ export interface AnalyzeRequest {
 export interface AnalyzeResponse {
   result: GradingResult;
   usage: Usage | null;
-  /** Modellen som faktiskt svarade (kan skilja sig vid serverns fallback). */
+  /** The model that actually answered (may differ when the server falls back). */
   servedBy: string;
 }
 
 export interface ModelOption {
   id: string;
   label: string;
-  /** USD per miljon tokens */
+  /** USD per million tokens */
   inputPrice: number;
   outputPrice: number;
   note: string;
@@ -46,41 +46,37 @@ export const ANTHROPIC_MODELS: ModelOption[] = [
     label: "Claude Opus 5.5",
     inputPrice: 4,
     outputPrice: 20,
-    note: "Noggrannast. Standard.",
+    note: "Most thorough. Default.",
   },
   {
     id: "claude-sonnet-5-5",
     label: "Claude Sonnet 5.5",
     inputPrice: 2,
     outputPrice: 10,
-    note: "Ungefär halva kostnaden, något mindre noggrann.",
+    note: "About half the cost, slightly less thorough.",
   },
 ];
 
 export const DEFAULT_MODEL = ANTHROPIC_MODELS[0]!.id;
 
-/** Ungefärlig växelkurs för kostnadsvisning. Bara en fingervisning. */
-export const SEK_PER_USD = 10.5;
-
-/** Visuella tokens per bild enligt Anthropics regel ⌈w/28⌉·⌈h/28⌉. */
+/** Visual tokens per image according to Anthropic's rule ⌈w/28⌉·⌈h/28⌉. */
 export function imageTokens(width: number, height: number): number {
   return Math.ceil(width / 28) * Math.ceil(height / 28);
 }
 
-/** Uppskattning före analysen: bilder + prompt + ett typiskt svar inklusive tänkande. */
+/** Estimate before the analysis: images + prompt + a typical reply including thinking. */
 export function estimateCost(
   images: { width: number; height: number }[],
   model: ModelOption,
-): { inputTokens: number; outputTokens: number; usd: number; sek: number } {
+): { inputTokens: number; outputTokens: number; usd: number } {
   const inputTokens = images.reduce((s, i) => s + imageTokens(i.width, i.height), 0) + 2500;
   const outputTokens = 7000;
   const usd = (inputTokens * model.inputPrice + outputTokens * model.outputPrice) / 1_000_000;
-  return { inputTokens, outputTokens, usd, sek: usd * SEK_PER_USD };
+  return { inputTokens, outputTokens, usd };
 }
 
-export function actualCost(usage: Usage, modelId: string): { usd: number; sek: number } | null {
+export function actualCost(usage: Usage, modelId: string): { usd: number } | null {
   const m = ANTHROPIC_MODELS.find((x) => modelId.startsWith(x.id));
   if (!m) return null;
-  const usd = (usage.inputTokens * m.inputPrice + usage.outputTokens * m.outputPrice) / 1_000_000;
-  return { usd, sek: usd * SEK_PER_USD };
+  return { usd: (usage.inputTokens * m.inputPrice + usage.outputTokens * m.outputPrice) / 1_000_000 };
 }

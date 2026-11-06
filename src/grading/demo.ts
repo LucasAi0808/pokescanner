@@ -3,9 +3,9 @@ import { GradingError } from "./errors";
 import { normalizeModelOutput, type ModelOutput } from "./types";
 
 /**
- * Demoläge: ingen modell tittar på bilderna. Resultatet är förskrivet och
- * matchar de fel som `scripts/make-demo-images.mjs` ritar in i demokortet
- * (bilderna är 1500×2000 px, kortet ligger i x 163, y 180, 1174×1640 px).
+ * Demo mode: no model looks at the photos. The result is pre-written and
+ * matches the flaws that `scripts/make-demo-images.mjs` draws on the demo card
+ * (the images are 1500×2000 px, the card sits at x 163, y 180, 1174×1640 px).
  */
 export const DEMO_IMAGES = {
   front: "demo/front.jpg",
@@ -18,29 +18,29 @@ export const DEMO_OUTPUT: ModelOutput = {
   grade_low: 7,
   grade_high: 8,
   summary:
-    "DEMO: Kortet ser rent ut i stort, men en vit prick i baksidans övre vänstra hörn och lätt kantnötning på framsidans högra kant drar ner betyget. Framsidan är märkbart förskjuten åt höger. Ett ljust stråk över bilden ser ut att vara en reflex från fotot, inte en skada.",
+    "DEMO: The card looks clean overall, but a small white dot on the top left corner of the back and light edge wear on the right edge of the front pull the grade down. The front is noticeably off-center to the right. A light streak across the artwork looks like a reflection from the photo, not damage.",
   subgrades: {
     centering: {
-      assessment: "Framsidans vänsterram är synligt bredare än högerramen. Baksidan ser jämn ut.",
+      assessment: "The left border on the front is visibly wider than the right. The back looks even.",
       low: 7,
       high: 8,
       confidence: "medium",
     },
     corners: {
-      assessment: "Tre hörn ser skarpa ut. Baksidans övre vänstra hörn har en liten vit prick.",
+      assessment: "Three corners look sharp. The top left corner of the back has a small white dot.",
       low: 7,
       high: 8,
       confidence: "medium",
     },
     edges: {
-      assessment: "Några små vita nötningsmärken längs framsidans högra kant.",
+      assessment: "A few small white wear marks along the right edge of the front.",
       low: 7,
       high: 8,
       confidence: "medium",
     },
     surface: {
       assessment:
-        "Inga tydliga repor. Ett ljust stråk på framsidan är troligen en reflex. Ytan kan inte bedömas helt under stråket.",
+        "No clear scratches. A light streak on the front is most likely a reflection. The surface under it cannot be fully assessed.",
       low: 8,
       high: 9,
       confidence: "low",
@@ -52,10 +52,10 @@ export const DEMO_OUTPUT: ModelOutput = {
       kind: "defect",
       category: "corners",
       severity: "moderate",
-      title: "Liten vit prick i baksidans övre vänstra hörn",
+      title: "Small white dot on the top left corner of the back",
       description:
-        "En vit prick precis innanför hörnet där färgen verkar ha nötts bort. Sådana märken syns tydligt under plast och drar ofta ner hörnbetyget.",
-      location: "baksidans övre vänstra hörn",
+        "A white dot just inside the corner where the color seems worn away. Marks like this show clearly in a slab and often lower the corner grade.",
+      location: "top left corner of the back",
       box: { x: 168, y: 186, width: 64, height: 64 },
     },
     {
@@ -63,9 +63,9 @@ export const DEMO_OUTPUT: ModelOutput = {
       kind: "defect",
       category: "edges",
       severity: "minor",
-      title: "Lätt kantnötning på högra kanten",
-      description: "Tre små vita märken längs framsidans högra kant, nedre halvan.",
-      location: "framsidans högra kant, nedre halvan",
+      title: "Light edge wear on the right edge",
+      description: "Three small white marks along the right edge of the front, lower half.",
+      location: "right edge of the front, lower half",
       box: { x: 1296, y: 1060, width: 60, height: 230 },
     },
     {
@@ -73,10 +73,10 @@ export const DEMO_OUTPUT: ModelOutput = {
       kind: "possible_reflection",
       category: "surface",
       severity: "minor",
-      title: "Ljust stråk över bildrutan",
+      title: "Light streak across the artwork",
       description:
-        "Ett diagonalt ljust stråk som följer ljuset i rummet. Troligen en reflex, men ytan under går inte att bedöma säkert. Ta gärna en bild i snett ljus.",
-      location: "framsidans bildruta, övre delen",
+        "A diagonal light streak that follows the light in the room. Most likely a reflection, but the surface underneath cannot be assessed with certainty. An angled-light photo would help.",
+      location: "artwork on the front, upper part",
       box: { x: 420, y: 330, width: 560, height: 420 },
     },
     {
@@ -84,31 +84,31 @@ export const DEMO_OUTPUT: ModelOutput = {
       kind: "print_feature",
       category: "surface",
       severity: "minor",
-      title: "Diagonala linjer i holomönstret",
-      description: "Jämna, parallella linjer över hela bildrutan som hör till kortets tryck. Drar inte ner betyget.",
-      location: "framsidans bildruta",
+      title: "Diagonal lines in the holo pattern",
+      description: "Even, parallel lines across the whole artwork that are part of the print. They do not lower the grade.",
+      location: "artwork on the front",
       box: { x: 290, y: 320, width: 920, height: 640 },
     },
   ],
   hard_to_assess: [
     {
-      aspect: "Ytan under det ljusa stråket",
-      reason: "Reflexen kan dölja fina repor. En bild i snett ljus skulle hjälpa.",
+      aspect: "Surface under the light streak",
+      reason: "The reflection may hide fine scratches. An angled-light photo would help.",
     },
     {
-      aspect: "Böjning och tjocklek",
-      reason: "Går inte att se på rakt framifrån tagna foton.",
+      aspect: "Bending and thickness",
+      reason: "Not visible in photos taken straight from above.",
     },
   ],
   image_issues: [
     {
       image: "front",
-      problem: "Ett ljust stråk från en lampa ligger över bildrutan.",
-      advice: "Vrid kortet eller lampan lite och ta om framsidan, eller lägg till en bild i snett ljus.",
+      problem: "A light streak from a lamp falls across the artwork.",
+      advice: "Tilt the card or the lamp slightly and retake the front, or add an angled-light photo.",
     },
   ],
   card: {
-    name: "Quartzling (fiktivt demokort)",
+    name: "Quartzling (fictional demo card)",
     number: "DEMO 001/100",
     set_name: "PokeScanner demo",
     language: "en",
@@ -118,10 +118,10 @@ export const DEMO_OUTPUT: ModelOutput = {
 
 export const demoProvider: GradingProvider = {
   id: "demo",
-  label: "Demoläge (ingen AI)",
-  recipient: "Ingen. Bilderna lämnar inte enheten.",
+  label: "Demo mode (no AI)",
+  recipient: "Nobody. The photos never leave your device.",
   needsKey: false,
-  costNote: "Gratis. Resultatet är ett förskrivet exempel.",
+  costNote: "Free. The result is a pre-written example.",
   analyze: (req, signal) =>
     new Promise((resolve, reject) => {
       const t = setTimeout(

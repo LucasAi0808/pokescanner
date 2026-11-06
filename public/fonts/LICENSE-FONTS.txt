@@ -1,10 +1,10 @@
-Typsnitten i den här mappen är licensierade under SIL Open Font License 1.1 (texten nedan).
+The fonts in this folder are licensed under the SIL Open Font License 1.1 (full text below).
 
-- Familjen Grotesk: Copyright 2021 The Familjen Grotesk Project Authors (https://github.com/Familjen-Sthlm/Familjen-Grotesk)
-- Instrument Serif: Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif)
+- Fredoka: Copyright 2016 The Fredoka Project Authors (https://github.com/hafontia/Fredoka-One)
+- Nunito: Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
 - JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 
-Filerna är latin-delmängder hämtade via Google Fonts.
+The files are Latin subsets downloaded via Google Fonts.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

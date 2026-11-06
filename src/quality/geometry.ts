@@ -1,11 +1,11 @@
 /**
- * Kortdetektion utan externa bibliotek. Fungerar på ett gråskalefält
- * (0–255) i analysupplösning (~1000 px långsida).
+ * Card detection without external libraries. Works on a grayscale field
+ * (0–255) at analysis resolution (~1000 px long edge).
  *
- * Idé: för varje rad letar vi upp den första starka kanten från vänster
- * respektive höger, för varje kolumn uppifrån och nedifrån. Punkterna anpassas
- * robust till fyra linjer (RANSAC + minsta kvadrat). Skärningspunkterna ger
- * kortets fyra hörn. Klarar lätt rotation och lite perspektiv.
+ * Idea: for every row we find the first strong edge from the left and from the
+ * right, and for every column from the top and from the bottom. The points are
+ * fitted to four lines (RANSAC + least squares). The intersections give the
+ * four corners of the card. Handles slight rotation and a little perspective.
  */
 
 export interface Gray {
@@ -15,7 +15,7 @@ export interface Gray {
 }
 
 export interface Line {
-  /** För vertikala linjer: x = a*y + b. För horisontella: y = a*x + b. */
+  /** For vertical lines: x = a*y + b. For horizontal lines: y = a*x + b. */
   a: number;
   b: number;
   inliers: number;
@@ -34,10 +34,10 @@ export interface CardQuad {
   top: Line;
   bottom: Line;
   corners: { tl: Point; tr: Point; br: Point; bl: Point };
-  /** Kortets bredd/höjd i pixlar (medel av motstående sidor). */
+  /** Card width/height in pixels (average of opposite sides). */
   width: number;
   height: number;
-  /** Rotation i grader (positiv = medurs). */
+  /** Rotation in degrees (positive = clockwise). */
   angle: number;
 }
 
@@ -49,10 +49,10 @@ export function toGray(width: number, height: number, rgba: Uint8ClampedArray): 
   return { width, height, data };
 }
 
-const EDGE_T = 28; // minsta ljusskillnad över 4 px för att räknas som kant
+const EDGE_T = 28; // minimum brightness difference over 4 px to count as an edge
 const at = (g: Gray, x: number, y: number) => g.data[y * g.width + x]!;
 
-/** Första starka kanten längs en rad/kolumn, från ett håll. */
+/** First strong edge along a row/column, from one direction. */
 function firstEdge(
   g: Gray,
   fixed: number,
@@ -67,10 +67,10 @@ function firstEdge(
     const i = fromStart ? k : len - 1 - k;
     const d = Math.abs(sample(i + 2 * (fromStart ? 1 : -1)) - sample(i - 2 * (fromStart ? 1 : -1)));
     if (d > EDGE_T) {
-      // Kräver att kontrasten håller i sig lite (filtrerar enstaka brusprickar).
+      // Require the contrast to persist a little (filters out single noise dots).
       const d2 = Math.abs(sample(i + 4 * (fromStart ? 1 : -1)) - sample(i - 2 * (fromStart ? 1 : -1)));
       if (d2 > EDGE_T * 0.8) {
-        // Förfina till gradientens tyngdpunkt i ett litet fönster (subpixel).
+        // Refine to the gradient centroid in a small window (subpixel).
         const sgn = fromStart ? 1 : -1;
         let w = 0, s = 0;
         for (let j = 0; j <= 6; j++) {
@@ -87,11 +87,11 @@ function firstEdge(
   return null;
 }
 
-/** Robust linjeanpassning v = a*u + b. */
+/** Robust line fit v = a*u + b. */
 export function fitLine(points: { u: number; v: number }[], tol = 2.5): Line | null {
   if (points.length < 8) return null;
   let best: { a: number; b: number; n: number } | null = null;
-  // Deterministisk "RANSAC": prova par över spridda index i stället för slump.
+  // Deterministic "RANSAC": try pairs over spread-out indices instead of random ones.
   const n = points.length;
   const step = Math.max(1, Math.floor(n / 25));
   for (let i = 0; i < n; i += step) {
@@ -108,7 +108,7 @@ export function fitLine(points: { u: number; v: number }[], tol = 2.5): Line | n
   }
   if (!best) return null;
   const inl = points.filter((r) => Math.abs(best!.a * r.u + best!.b - r.v) <= tol);
-  // Minsta kvadrat på inliers.
+  // Least squares on the inliers.
   const m = inl.length;
   let su = 0, sv = 0, suu = 0, suv = 0;
   for (const r of inl) {
@@ -123,7 +123,7 @@ export function fitLine(points: { u: number; v: number }[], tol = 2.5): Line | n
 }
 
 function edgeLine(g: Gray, side: "left" | "right" | "top" | "bottom"): Line | null {
-  const horizontal = side === "left" || side === "right"; // vi skannar längs rader
+  const horizontal = side === "left" || side === "right"; // we scan along rows
   const fromStart = side === "left" || side === "top";
   const across = horizontal ? g.height : g.width;
   const pts: { u: number; v: number }[] = [];
@@ -134,7 +134,7 @@ function edgeLine(g: Gray, side: "left" | "right" | "top" | "bottom"): Line | nu
   }
   const line = fitLine(pts);
   if (!line) return null;
-  // Linjen måste stödjas av en betydande del av raderna.
+  // The line must be supported by a significant share of the rows.
   if (line.inliers < Math.max(12, pts.length * 0.3)) return null;
   return line;
 }
@@ -164,5 +164,5 @@ export function detectCard(g: Gray): CardQuad | null {
   return { left, right, top, bottom, corners: { tl, tr, br, bl }, width, height, angle };
 }
 
-/** Standardkort är 63 × 88 mm. */
+/** Standard cards are 63 × 88 mm. */
 export const CARD_ASPECT = 63 / 88;

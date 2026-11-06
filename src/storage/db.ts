@@ -2,7 +2,7 @@ import type { CardIdentity, GradingResult, ImageSlot, Usage } from "../grading/t
 import type { PreparedImage } from "../images/prepare";
 
 /**
- * Lokal lagring i IndexedDB. Allt stannar på enheten. API-nyckeln sparas aldrig här.
+ * Local storage in IndexedDB. Everything stays on the device. The API key is never stored here.
  */
 
 export interface ActualGrade {
@@ -20,10 +20,10 @@ export interface Assessment {
   demo: boolean;
   images: PreparedImage[];
   result: GradingResult;
-  /** Användarens (eventuellt rättade) kortuppgifter. */
+  /** The user's (possibly corrected) card details. */
   card: CardIdentity;
   usage: Usage | null;
-  costSek: number | null;
+  costUsd: number | null;
   actual: ActualGrade | null;
 }
 
@@ -43,7 +43,7 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 function open(): Promise<IDBDatabase> {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB saknas"));
+      if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB is not available"));
       const req = indexedDB.open(DB_NAME, VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
@@ -66,21 +66,21 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
         const req = fn(tx.objectStore(store));
         tx.oncomplete = () => resolve(req.result);
         tx.onerror = () => reject(tx.error ?? req.error);
-        tx.onabort = () => reject(tx.error ?? new Error("Transaktionen avbröts"));
+        tx.onabort = () => reject(tx.error ?? new Error("The transaction was aborted"));
       }),
   );
 }
 
 export function newId(): string {
-  // crypto.randomUUID kräver säker kontext (https); appen ska fungera över http på LAN.
+  // crypto.randomUUID needs a secure context (https); the app must also work over http on a LAN.
   const rnd = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
   return `${Date.now().toString(36)}-${rnd}`;
 }
 
 /*
- * Safari/WebKit kan vägra lagra Blob i IndexedDB ("Error preparing Blob/File
- * data to be stored"). Därför sparas bilderna som ArrayBuffer och görs om
- * till Blob när de läses.
+ * Safari/WebKit can refuse to store Blobs in IndexedDB ("Error preparing Blob/File
+ * data to be stored"). So images are stored as ArrayBuffers and turned back
+ * into Blobs when read.
  */
 type StoredImage = Omit<PreparedImage, "blob"> & { bytes: ArrayBuffer; type: string };
 

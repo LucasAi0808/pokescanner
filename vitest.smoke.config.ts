@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-// Röktest mot riktiga API:t. Körs bara med `npm run smoke:real`.
+// Smoke test against the real API. Only runs with `npm run smoke:real`.
 export default defineConfig({
   test: {
     environment: "node",

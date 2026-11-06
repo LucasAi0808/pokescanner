@@ -25,12 +25,12 @@ export function message(output: ModelOutput | string, opts: { stop_reason?: stri
   };
 }
 
-/** Ett "riktigt" svar som pekar på framsidan och baksidan, inte ett demoresultat. */
+/** A "real" reply pointing at the front and back, not a demo result. */
 export function liveOutput(overrides: Partial<ModelOutput> = {}): ModelOutput {
   return {
     ...DEMO_OUTPUT,
-    summary: "Testsvar: kortet ser bra ut men har en vit prick på baksidan.",
-    card: { name: "Testkort", number: "025/165", set_name: "Testset", language: "ja", confidence: "medium" },
+    summary: "Test reply: the card looks good but has a white dot on the back.",
+    card: { name: "Test card", number: "025/165", set_name: "Test set", language: "ja", confidence: "medium" },
     ...overrides,
   };
 }
@@ -46,7 +46,7 @@ export interface ApiMock {
   posts: { headers: Record<string, string>; body: any }[];
 }
 
-/** Fångar alla anrop till api.anthropic.com och svarar med `reply`. */
+/** Intercepts every request to api.anthropic.com and answers with `reply`. */
 export async function mockAnthropic(page: Page, reply: (n: number) => ApiReply): Promise<ApiMock> {
   const mock: ApiMock = { posts: [] };
   await page.route("https://api.anthropic.com/**", async (route: Route) => {
@@ -55,7 +55,7 @@ export async function mockAnthropic(page: Page, reply: (n: number) => ApiReply):
       await route.fulfill({ status: 204, headers: CORS });
       return;
     }
-    // allHeaders(): headers() döljer vissa headers i WebKit.
+    // allHeaders(): headers() hides some headers in WebKit.
     mock.posts.push({ headers: await req.allHeaders(), body: req.postDataJSON() });
     const r = reply(mock.posts.length);
     if (r.delayMs) await new Promise((res) => setTimeout(res, r.delayMs));
@@ -66,7 +66,7 @@ export async function mockAnthropic(page: Page, reply: (n: number) => ApiReply):
         body: JSON.stringify(r.body ?? {}),
       });
     } catch {
-      /* anropet avbröts av klienten */
+      /* the request was aborted by the client */
     }
   });
   return mock;
@@ -79,13 +79,18 @@ export async function uploadPair(page: Page, front = "public/demo/front.jpg", ba
   await page.getByTestId("slot-back").locator("img").first().waitFor();
 }
 
-export async function fillConsent(page: Page, key = FAKE_KEY) {
+export async function analyzeWithKey(page: Page, key = FAKE_KEY) {
   await page.getByTestId("api-key").fill(key);
   await page.getByTestId("consent-check").check();
-  await page.getByRole("dialog").getByRole("button", { name: "Analysera" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Analyze" }).click();
 }
 
-/** Allt som ligger i localStorage, sessionStorage och IndexedDB (utom bilddata), som text. */
+/** A fresh result opens as a booster pack first; skip straight to the details. */
+export async function skipBooster(page: Page) {
+  await page.getByTestId("booster-skip").click();
+}
+
+/** Everything in localStorage, sessionStorage and IndexedDB (except image data), as text. */
 export async function dumpStorage(page: Page): Promise<string> {
   return page.evaluate(async () => {
     const out: unknown[] = [{ ...localStorage }, { ...sessionStorage }];

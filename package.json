@@ -2,7 +2,7 @@
   "name": "pokescanner",
   "version": "0.1.0",
   "private": true,
-  "description": "Fota ett samlarkort och få en motiverad, inofficiell gradeuppskattning med din egen API-nyckel.",
+  "description": "Snap your Pokémon card and get an unofficial, explained grade estimate with your own API key.",
   "license": "MIT",
   "type": "module",
   "scripts": {

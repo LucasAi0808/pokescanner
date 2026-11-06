@@ -1,6 +1,6 @@
 import type { RGBAImage } from "../../src/quality/checks";
 
-/** Deterministisk pseudoslump så testerna blir stabila. */
+/** Deterministic pseudo-random numbers so the tests are stable. */
 export function rng(seed = 1) {
   let s = seed >>> 0;
   return () => {
@@ -13,7 +13,7 @@ export interface CardSpec {
   width?: number;
   height?: number;
   card?: { x: number; y: number; w: number; h: number };
-  /** Ramens bredd i px: vänster, höger, topp, botten */
+  /** Border width in px: left, right, top, bottom */
   borders?: { l: number; r: number; t: number; b: number };
   angleDeg?: number;
   noise?: number;
@@ -25,8 +25,8 @@ export interface CardSpec {
 }
 
 /**
- * Ritar ett "foto" av ett kort: mörk bakgrund, ljus ram, mörkare inre del,
- * plus valfri rotation, brus, blänkfläck och oskärpa.
+ * Draws a "photo" of a card: dark background, light border, darker inner part,
+ * plus optional rotation, noise, a glare spot and blur.
  */
 export function syntheticCard(spec: CardSpec = {}): RGBAImage {
   const W = spec.width ?? 750;
@@ -46,7 +46,7 @@ export function syntheticCard(spec: CardSpec = {}): RGBAImage {
   const sin = Math.sin(-angle);
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      // Rotera tillbaka till kortets koordinater.
+      // Rotate back into card coordinates.
       const dx = x - cx;
       const dy = y - cy;
       const u = dx * cos - dy * sin + card.w / 2;

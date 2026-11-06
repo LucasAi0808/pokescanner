@@ -1,12 +1,12 @@
 /**
- * Röktest mot det RIKTIGA Anthropic-API:t med samma kod som appen använder.
- * Kostar ett anrop (ungefär 1–3 kr med Opus 5.5).
+ * Smoke test against the REAL Anthropic API using the same code as the app.
+ * Costs one request (roughly $0.10–0.30 with Opus 5.5).
  *
  *   PowerShell:  $env:ANTHROPIC_API_KEY="sk-ant-..."; npm run smoke:real
  *   bash:        ANTHROPIC_API_KEY=sk-ant-... npm run smoke:real
  *
- * Valfritt: PS_MODEL=claude-sonnet-5-5 för den billigare modellen.
- * Nyckeln läses bara från miljövariabeln och skrivs aldrig ut.
+ * Optional: PS_MODEL=claude-sonnet-5-5 for the cheaper model.
+ * The key is only read from the environment variable and never printed.
  */
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
@@ -16,9 +16,9 @@ import { actualCost, DEFAULT_MODEL } from "../../src/grading/provider";
 const key = process.env.ANTHROPIC_API_KEY;
 const model = process.env.PS_MODEL ?? DEFAULT_MODEL;
 
-describe.skipIf(!key)("riktigt API", () => {
+describe.skipIf(!key)("real API", () => {
   it(
-    "graderar demokortet och svarar i rätt format",
+    "grades the demo card and replies in the right format",
     async () => {
       const img = async (slot: "front" | "back") => ({
         slot,
@@ -32,14 +32,14 @@ describe.skipIf(!key)("riktigt API", () => {
         new AbortController().signal,
       );
       const r = res.result;
-      console.log("\n--- Svar från", res.servedBy, "---");
+      console.log("\n--- Reply from", res.servedBy, "---");
       console.log("Status:", r.status, r.gradeRange ? `${r.gradeRange.low}–${r.gradeRange.high}` : r.abstainReason);
-      console.log("Sammanfattning:", r.summary);
-      for (const f of r.findings) console.log(` [${f.kind}] ${f.image}: ${f.title} (${f.location})`, f.box ? "ruta ok" : "ingen ruta");
-      console.log("Kort:", r.card);
+      console.log("Summary:", r.summary);
+      for (const f of r.findings) console.log(` [${f.kind}] ${f.image}: ${f.title} (${f.location})`, f.box ? "box ok" : "no box");
+      console.log("Card:", r.card);
       if (res.usage) {
         const c = actualCost(res.usage, model);
-        console.log(`Tokens: ${res.usage.inputTokens} in, ${res.usage.outputTokens} ut ≈ ${c?.sek.toFixed(2)} kr`);
+        console.log(`Tokens: ${res.usage.inputTokens} in, ${res.usage.outputTokens} out ≈ $${c?.usd.toFixed(3)}`);
       }
       expect(["graded", "abstained"]).toContain(r.status);
       expect(r.summary.length).toBeGreaterThan(10);
@@ -48,6 +48,6 @@ describe.skipIf(!key)("riktigt API", () => {
   );
 });
 
-it.skipIf(!!key)("hoppas över utan ANTHROPIC_API_KEY", () => {
-  console.log("Sätt ANTHROPIC_API_KEY för att köra röktestet mot riktiga API:t.");
+it.skipIf(!!key)("skipped without ANTHROPIC_API_KEY", () => {
+  console.log("Set ANTHROPIC_API_KEY to run the smoke test against the real API.");
 });

@@ -13,7 +13,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    // Safari på iPhone är huvudmålet.
+    // Safari on iPhone is the main target.
     { name: "iphone-webkit", use: { ...devices["iPhone 15"] } },
   ],
   webServer: {

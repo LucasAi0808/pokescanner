@@ -11,6 +11,7 @@ import { ConsentSheet } from "./screens/ConsentSheet";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { StartScreen } from "./screens/StartScreen";
+import { BoosterReveal } from "./ui/BoosterReveal";
 import { loadModel, saveModel, session } from "./session";
 import * as db from "./storage/db";
 
@@ -36,6 +37,8 @@ export function App() {
   const [history, setHistory] = useState<db.Assessment[]>([]);
   const [storageError, setStorageError] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  // A fresh result opens like a booster pack; saved results open directly.
+  const [booster, setBooster] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const restored = useRef(false);
 
@@ -47,7 +50,7 @@ export function App() {
     }
   }, []);
 
-  // Återställ utkast (iOS kan ladda om fliken efter kameran) och läs historiken.
+  // Restore the draft (iOS may reload the tab after the camera) and read the history.
   useEffect(() => {
     if (restored.current) return;
     restored.current = true;
@@ -57,7 +60,7 @@ export function App() {
         if (d && Object.keys(d.images).length) {
           setImages(d.images);
           setProviderId(d.providerId);
-          setNotice("Dina bilder från förra gången återställdes.");
+          setNotice("Your photos from last time were restored.");
           setScreen({ name: "capture" });
         }
       })
@@ -65,7 +68,7 @@ export function App() {
       .finally(() => setDraftLoaded(true));
   }, [refreshHistory]);
 
-  // Spara utkastet när bilderna ändras (först efter att det gamla lästs in).
+  // Save the draft when the photos change (only after the old one has been read).
   useEffect(() => {
     if (!draftLoaded) return;
     const has = Object.keys(images).length > 0;
@@ -97,13 +100,13 @@ export function App() {
       const entries = await Promise.all(
         (["front", "back"] as const).map(async (slot) => {
           const res = await fetch(DEMO_IMAGES[slot]);
-          if (!res.ok) throw new Error("Demobilden kunde inte laddas.");
+          if (!res.ok) throw new Error("The demo photo could not be loaded.");
           return [slot, await prepareImage(await res.blob(), slot)] as const;
         }),
       );
       setImages(Object.fromEntries(entries));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Demobilderna kunde inte laddas.");
+      setError(e instanceof Error ? e.message : "The demo photos could not be loaded.");
     } finally {
       setBusy({});
     }
@@ -116,7 +119,7 @@ export function App() {
       const img = await prepareImage(file, slot);
       setImages((cur) => ({ ...cur, [slot]: img }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Bilden kunde inte läsas.");
+      setError(e instanceof Error ? e.message : "The photo could not be read.");
     } finally {
       setBusy((b) => ({ ...b, [slot]: false }));
     }
@@ -141,7 +144,7 @@ export function App() {
     setScreen({ name: "analyzing" });
     scrollTop();
     try {
-      // Bilderna kodas och skickas först nu, när användaren tryckt Analysera.
+      // The photos are encoded and sent only now, after the user tapped Analyze.
       const payload: ProviderImage[] = await Promise.all(
         list.map(async (i) => ({
           slot: i.slot,
@@ -166,7 +169,7 @@ export function App() {
         result: res.result,
         card: res.result.card,
         usage: res.usage,
-        costSek: res.usage ? (actualCost(res.usage, model)?.sek ?? null) : null,
+        costUsd: res.usage ? (actualCost(res.usage, model)?.usd ?? null) : null,
         actual: null,
       };
       let saved = true;
@@ -180,6 +183,7 @@ export function App() {
       setImages({});
       setCurrent({ a, saved });
       await refreshHistory();
+      setBooster(true);
       setScreen({ name: "result", from: "analysis" });
       scrollTop();
     } catch (e) {
@@ -199,10 +203,11 @@ export function App() {
   };
 
   const openAssessment = async (id: string) => {
-    // Bara lokal läsning. Inga anrop till någon leverantör.
+    // Local read only. No requests to any provider.
     const a = await db.getAssessment(id);
     if (!a) return;
     setCurrent({ a, saved: true });
+    setBooster(false);
     setScreen({ name: "result", from: "history" });
     scrollTop();
   };
@@ -214,7 +219,7 @@ export function App() {
     setProviderId(current.a.demo ? "demo" : "anthropic");
     setImages(imgs);
     setError(null);
-    setNotice("Bilderna från bedömningen är ifyllda. Byt ut de som behöver tas om.");
+    setNotice("The photos from that result are filled in. Replace the ones that need retaking.");
     setScreen({ name: "capture" });
     scrollTop();
   };
@@ -254,18 +259,28 @@ export function App() {
           front={images.front}
           label={
             provider.id === "demo"
-              ? "Demoläge: inga bilder skickas."
-              : `Skickat till ${provider.recipient}, ${ANTHROPIC_MODELS.find((m) => m.id === model)?.label ?? model}.`
+              ? "Demo mode: no photos are sent."
+              : `Sent to ${provider.recipient}, ${ANTHROPIC_MODELS.find((m) => m.id === model)?.label ?? model}.`
           }
           onCancel={() => abortRef.current?.abort()}
         />
       )}
-      {screen.name === "result" && current && (
+      {screen.name === "result" && current && booster && (
+        <BoosterReveal
+          result={current.a.result}
+          demo={current.a.demo}
+          onDone={() => {
+            setBooster(false);
+            scrollTop();
+          }}
+        />
+      )}
+      {screen.name === "result" && current && !booster && (
         <ResultScreen
           key={current.a.id}
           assessment={current.a}
           saved={current.saved}
-          backLabel={screen.from === "history" ? "Historik" : "Start"}
+          backLabel={screen.from === "history" ? "My cards" : "Home"}
           onBack={() => setScreen(screen.from === "history" ? { name: "history" } : { name: "start" })}
           onNew={startGrading}
           onRetake={retake}

@@ -7,9 +7,9 @@ import { SYSTEM_PROMPT, USER_INSTRUCTION, imageIntro } from "./prompt";
 import { ModelOutputSchema, normalizeModelOutput, type ModelOutput } from "./types";
 
 /**
- * Anropar Anthropic direkt från webbläsaren med användarens egen nyckel.
- * Nyckeln skickas bara i Authorization-headern till api.anthropic.com. Den finns
- * aldrig i bygget, sparas inte och loggas inte.
+ * Calls Anthropic directly from the browser with the user's own key.
+ * The key is only sent in the Authorization header to api.anthropic.com. It is
+ * never part of the build, never stored and never logged.
  */
 export async function analyzeWithAnthropic(
   req: AnalyzeRequest,
@@ -20,8 +20,8 @@ export async function analyzeWithAnthropic(
 
   const client = new Anthropic({
     apiKey: req.apiKey,
-    // Nyckeln matas in av användaren vid körning (bring your own key). Ingen
-    // nyckel bakas in i klientkoden, så webbläsaranrop är avsiktligt här.
+    // The key is entered by the user at runtime (bring your own key). No key is
+    // baked into the client code, so browser calls are intentional here.
     dangerouslyAllowBrowser: true,
     maxRetries: 1,
     timeout: 5 * 60 * 1000,
@@ -39,17 +39,17 @@ export async function analyzeWithAnthropic(
   content.push({ type: "text", text: USER_INSTRUCTION });
 
   try {
-    // create() i stället för parse(): stop_reason måste kontrolleras innan
-    // texten tolkas, annars blir en refusal (tom text) ett formatfel.
+    // create() instead of parse(): stop_reason must be checked before the text
+    // is parsed, otherwise a refusal (empty text) becomes a format error.
     const response = await client.beta.messages.create(
       {
         model: req.model,
         max_tokens: 16000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
-        // Structured outputs: JSON-schemat från zod-schemat.
+        // Structured outputs: JSON schema generated from the zod schema.
         output_config: { effort: "high", format: betaZodOutputFormat(ModelOutputSchema) },
-        // Om modellen avböjer av policyskäl provar servern en ersättningsmodell.
+        // If the model declines for policy reasons, the server tries a substitute model.
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
       },
@@ -73,7 +73,7 @@ export async function analyzeWithAnthropic(
   }
 }
 
-/** Tolkar modellens text-svar och validerar det mot schemat. */
+/** Parses the model text reply and validates it against the schema. */
 export function parseOutput(content: Anthropic.Beta.BetaContentBlock[]): ModelOutput {
   const text = content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")

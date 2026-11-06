@@ -2,7 +2,7 @@ import { anthropicProvider } from "./anthropic-provider";
 import { demoProvider } from "./demo";
 import type { GradingProvider } from "./provider";
 
-/** Alla leverantörer. Lägg till en lokal modell här. */
+/** All providers. Add a local model here. */
 export const PROVIDERS: Record<string, GradingProvider> = {
   [anthropicProvider.id]: anthropicProvider,
   [demoProvider.id]: demoProvider,
@@ -10,6 +10,6 @@ export const PROVIDERS: Record<string, GradingProvider> = {
 
 export function getProvider(id: string): GradingProvider {
   const p = PROVIDERS[id];
-  if (!p) throw new Error(`Okänd leverantör: ${id}`);
+  if (!p) throw new Error(`Unknown provider: ${id}`);
   return p;
 }

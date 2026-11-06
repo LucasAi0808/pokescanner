@@ -6,6 +6,7 @@ import { GradingError } from "../../src/grading/errors";
 import { toGradingError } from "../../src/grading/sdk-errors";
 import { estimateCost, imageTokens, ANTHROPIC_MODELS } from "../../src/grading/provider";
 import { normalizeModelOutput, type ModelOutput } from "../../src/grading/types";
+import { rarityOf } from "../../src/ui/format";
 import { fitLimits } from "../../src/images/prepare";
 
 const IMGS = [
@@ -15,35 +16,35 @@ const IMGS = [
 const text = (t: string) => [{ type: "text", text: t, citations: null }] as unknown as Anthropic.Beta.BetaContentBlock[];
 const clone = (): ModelOutput => structuredClone(DEMO_OUTPUT);
 
-describe("svarsformat", () => {
-  it("godtar ett giltigt svar", () => {
+describe("response format", () => {
+  it("accepts a valid reply", () => {
     expect(parseOutput(text(JSON.stringify(DEMO_OUTPUT))).grade_low).toBe(7);
   });
-  it("trasig JSON ger bad_format", () => {
-    expect(() => parseOutput(text("{ inte json"))).toThrowError(GradingError);
+  it("broken JSON gives bad_format", () => {
+    expect(() => parseOutput(text("{ not json"))).toThrowError(GradingError);
     try {
-      parseOutput(text("{ inte json"));
+      parseOutput(text("{ not json"));
     } catch (e) {
       expect((e as GradingError).code).toBe("bad_format");
     }
   });
-  it("fel schema ger bad_format", () => {
+  it("wrong schema gives bad_format", () => {
     const bad = { ...DEMO_OUTPUT, findings: [{ image: "front" }] };
     expect(() => parseOutput(text(JSON.stringify(bad)))).toThrowError(/format/);
   });
 });
 
-describe("normalisering", () => {
-  it("räknar om pixelrutor till 0–1 och behåller fynd", () => {
+describe("normalization", () => {
+  it("converts pixel boxes to 0–1 and keeps findings", () => {
     const r = normalizeModelOutput(DEMO_OUTPUT, IMGS);
-    const dot = r.findings.find((f) => f.title.includes("vit prick"))!;
+    const dot = r.findings.find((f) => f.title.includes("white dot"))!;
     expect(dot.image).toBe("back");
     expect(dot.box!.x).toBeCloseTo(168 / 1500, 5);
     expect(dot.box!.w).toBeCloseTo(64 / 1500, 5);
     expect(r.gradeRange).toEqual({ low: 7, high: 8 });
   });
 
-  it("klipper rutor utanför bilden och tar bort fynd på bilder som inte skickats", () => {
+  it("clamps boxes outside the image and drops findings on images that were not sent", () => {
     const o = clone();
     o.findings[0]!.box = { x: -50, y: 1900, width: 2000, height: 500 };
     o.findings.push({ ...o.findings[1]!, image: "closeup" });
@@ -55,7 +56,7 @@ describe("normalisering", () => {
     expect(r.findings.some((f) => f.image === "closeup")).toBe(false);
   });
 
-  it("vänder på omkastat intervall och avrundar till halvsteg inom 1–10", () => {
+  it("flips a reversed range and rounds to half grades within 1–10", () => {
     const o = clone();
     o.grade_low = 9.3;
     o.grade_high = 6.8;
@@ -65,7 +66,7 @@ describe("normalisering", () => {
     expect(normalizeModelOutput(o, IMGS).gradeRange).toEqual({ low: 1, high: 10 });
   });
 
-  it("avstått svar har inget intervall även om modellen skickat ett", () => {
+  it("an abstained reply has no range even if the model sent one", () => {
     const o = clone();
     o.status = "abstained";
     o.abstain_reason = null;
@@ -75,7 +76,7 @@ describe("normalisering", () => {
     expect(r.abstainReason).toBeTruthy();
   });
 
-  it("'graded' utan intervall blir avstått", () => {
+  it("'graded' without a range becomes abstained", () => {
     const o = clone();
     o.grade_low = null;
     o.grade_high = null;
@@ -83,7 +84,7 @@ describe("normalisering", () => {
   });
 });
 
-describe("felmappning", () => {
+describe("error mapping", () => {
   const h = new Headers();
   it.each([
     [new Anthropic.AuthenticationError(401, {}, "x", h), "invalid_key"],
@@ -94,19 +95,19 @@ describe("felmappning", () => {
   ] as const)("%s -> %s", (err, code) => {
     expect(toGradingError(err).code).toBe(code);
   });
-  it("529 räknas som överbelastat", () => {
+  it("529 counts as overloaded", () => {
     const e = Anthropic.APIError.generate(529, { type: "error", error: { type: "overloaded_error" } }, "Overloaded", h);
     expect(toGradingError(e).code).toBe("overloaded");
   });
-  it("felmeddelanden innehåller aldrig något som liknar en nyckel", () => {
+  it("error messages never contain anything that looks like a key", () => {
     const e = toGradingError(new Anthropic.BadRequestError(400, {}, "bad sk-ant-abc123secret", h));
     expect(e.detail).not.toContain("abc123secret");
     expect(e.message).not.toContain("sk-ant-abc");
   });
 });
 
-describe("bildstorlek och kostnad", () => {
-  it("håller sig under Anthropics gränser (2576 px, 4784 tokens)", () => {
+describe("image size and cost", () => {
+  it("stays under Anthropic's limits (2576 px, 4784 tokens)", () => {
     for (const [w, h] of [
       [4032, 3024],
       [3024, 4032],
@@ -119,9 +120,19 @@ describe("bildstorlek och kostnad", () => {
     }
     expect(fitLimits(1000, 1400)).toEqual({ width: 1000, height: 1400 });
   });
-  it("kostnadsuppskattningen är rimlig", () => {
+  it("the cost estimate is reasonable", () => {
     const est = estimateCost(IMGS, ANTHROPIC_MODELS[0]!);
-    expect(est.sek).toBeGreaterThan(0.5);
-    expect(est.sek).toBeLessThan(10);
+    expect(est.usd).toBeGreaterThan(0.05);
+    expect(est.usd).toBeLessThan(1);
+  });
+});
+
+describe("rarity badge", () => {
+  it("maps the middle of the range to stars", () => {
+    expect(rarityOf({ low: 9, high: 10 })).toMatchObject({ stars: 4, holo: true });
+    expect(rarityOf({ low: 7, high: 8 })).toMatchObject({ stars: 3, holo: false });
+    expect(rarityOf({ low: 4, high: 6 })).toMatchObject({ stars: 2 });
+    expect(rarityOf({ low: 1, high: 3 })).toMatchObject({ stars: 1 });
+    expect(rarityOf(null)).toBeNull();
   });
 });

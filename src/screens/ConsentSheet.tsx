@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ANTHROPIC_MODELS, estimateCost, type GradingProvider } from "../grading/provider";
-import { fmtSek } from "../ui/format";
+import { fmtUsd } from "../ui/format";
 
 interface Props {
   provider: GradingProvider;
@@ -31,33 +31,33 @@ export function ConsentSheet({ provider, images, model, hasKey, onModel, onConfi
       >
         <div className="sheet-grip" />
         <h2 id="consent-title" className="h2">
-          Innan analysen
+          Before the analysis
         </h2>
 
         <dl className="facts">
           <div>
-            <dt>Bilderna skickas till</dt>
+            <dt>Your photos go to</dt>
             <dd>
-              {provider.recipient}, modell <strong>{m.label}</strong>
+              {provider.recipient}, model <strong>{m.label}</strong>
             </dd>
           </div>
           <div>
-            <dt>Vad skickas</dt>
+            <dt>What is sent</dt>
             <dd>
-              {images.length} bilder, nedskalade och utan platsdata (EXIF), samt instruktionerna för bedömningen. Inget annat.
+              {images.length} photos, downscaled and without location data (EXIF), plus the grading instructions. Nothing else.
             </dd>
           </div>
           <div>
-            <dt>Kostnad</dt>
+            <dt>Cost</dt>
             <dd>
-              {provider.costNote} Uppskattning för den här analysen: ungefär <strong>{fmtSek(est.sek)}</strong> (
-              {(est.inputTokens / 1000).toFixed(1).replace(".", ",")}k tokens in, upp till ~{Math.round(est.outputTokens / 1000)}k ut).
+              {provider.costNote} Estimate for this analysis: about <strong>{fmtUsd(est.usd)}</strong> (
+              {(est.inputTokens / 1000).toFixed(1)}k tokens in, up to ~{Math.round(est.outputTokens / 1000)}k out).
             </dd>
           </div>
         </dl>
 
         <fieldset className="models">
-          <legend className="label">Modell</legend>
+          <legend className="label">Model</legend>
           {ANTHROPIC_MODELS.map((x) => (
             <label key={x.id} className={`model${x.id === model ? " is-on" : ""}`}>
               <input type="radio" name="model" value={x.id} checked={x.id === model} onChange={() => onModel(x.id)} />
@@ -70,9 +70,9 @@ export function ConsentSheet({ provider, images, model, hasKey, onModel, onConfi
         </fieldset>
 
         <label className="label" htmlFor="apikey">
-          Din Anthropic API-nyckel
+          Your Anthropic API key
         </label>
-        {hasKey && <p className="small ok">En nyckel finns redan i minnet för den här fliken. Lämna fältet tomt för att använda den.</p>}
+        {hasKey && <p className="small ok">A key is already in memory for this tab. Leave the field empty to use it.</p>}
         <input
           id="apikey"
           className="input mono"
@@ -87,23 +87,23 @@ export function ConsentSheet({ provider, images, model, hasKey, onModel, onConfi
           onChange={(e) => setKey(e.target.value)}
           data-testid="api-key"
         />
-        {looksWrong && <p className="small warn-text">Det ser inte ut som en Anthropic-nyckel (den börjar med sk-ant-).</p>}
+        {looksWrong && <p className="small warn-text">That does not look like an Anthropic key (it starts with sk-ant-).</p>}
         <p className="small dim">
-          Nyckeln ligger bara i minnet så länge sidan är öppen. Den sparas inte, loggas inte och följer inte med resultatet.
-          Skapa en nyckel på console.anthropic.com.
+          The key only lives in memory while this page is open. It is not stored, not logged and never saved with your
+          results. Create a key at console.anthropic.com.
         </p>
 
         <label className="check">
           <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} data-testid="consent-check" />
-          <span>Jag förstår att bilderna skickas till {provider.label} och att Anthropic kan ta betalt för anropet.</span>
+          <span>I understand that my photos are sent to {provider.label} and that Anthropic may charge me for the request.</span>
         </label>
 
         <div className="row end">
           <button type="button" className="btn ghost" onClick={onCancel}>
-            Avbryt
+            Cancel
           </button>
           <button type="submit" className="btn primary" disabled={!keyOk || !understood}>
-            Analysera
+            Analyze
           </button>
         </div>
       </form>

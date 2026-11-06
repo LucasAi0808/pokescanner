@@ -3,8 +3,10 @@ import { FINDING_KINDS, LANGUAGES, SLOT_LABELS, type CardIdentity, type CardLang
 import { ANTHROPIC_MODELS } from "../grading/provider";
 import { formatAxis } from "../quality/centering";
 import type { ActualGrade, Assessment } from "../storage/db";
-import { CONFIDENCE_LABEL, KIND_GROUP, KIND_LABEL, SEVERITY_LABEL, fmtDate, fmtGrade, fmtRange, fmtSek } from "../ui/format";
+import { EnergyIcon, SUBGRADE_ENERGY } from "../ui/EnergyIcon";
+import { CONFIDENCE_LABEL, KIND_GROUP, KIND_LABEL, SEVERITY_LABEL, fmtDate, fmtGrade, fmtRange, fmtUsd } from "../ui/format";
 import { ImageViewer } from "../ui/ImageViewer";
+import { RarityBadge } from "../ui/RarityBadge";
 
 interface Props {
   assessment: Assessment;
@@ -17,8 +19,8 @@ interface Props {
   onUpdate: (patch: Partial<Pick<Assessment, "card" | "actual">>) => Promise<void>;
 }
 
-const SUBGRADE_LABELS = { centering: "Centrering", corners: "Hörn", edges: "Kanter", surface: "Yta" } as const;
-const COMPANIES = ["PSA", "BGS", "CGC", "TAG", "ACE", "Annat"];
+const SUBGRADE_LABELS = { centering: "Centering", corners: "Corners", edges: "Edges", surface: "Surface" } as const;
+const COMPANIES = ["PSA", "BGS", "CGC", "TAG", "ACE", "Other"];
 
 export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, onRetake, onDelete, onUpdate }: Props) {
   const r = a.result;
@@ -26,10 +28,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
   const [focus, setFocus] = useState<{ id: string | null; n: number }>({ id: null, n: 0 });
   const viewerRef = useRef<HTMLDivElement>(null);
 
-  const ordered = useMemo(
-    () => FINDING_KINDS.flatMap((k) => r.findings.filter((f) => f.kind === k)),
-    [r.findings],
-  );
+  const ordered = useMemo(() => FINDING_KINDS.flatMap((k) => r.findings.filter((f) => f.kind === k)), [r.findings]);
   const numbers = useMemo(() => new Map(ordered.map((f, i) => [f.id, i + 1])), [ordered]);
 
   const goTo = (id: string, image: ImageSlot) => {
@@ -48,32 +47,22 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
         <button className="link" onClick={onBack}>
           ‹ {backLabel}
         </button>
-        {a.demo ? <span className="badge demo">DEMO</span> : <span className="mono dim">{saved ? "SPARAD LOKALT" : "EJ SPARAD"}</span>}
+        {a.demo ? <span className="badge demo">DEMO</span> : <span className="pill">{saved ? "Saved on device" : "Not saved"}</span>}
       </nav>
 
       {a.demo && (
         <p className="notice info" data-testid="demo-banner">
-          Detta är ett förskrivet exempelresultat för ett fiktivt kort. Ingen AI har tittat på bilderna.
+          This is a pre-written example result for a fictional card. No AI looked at the photos.
         </p>
       )}
 
       <section className="verdict" data-testid="verdict">
-        <p className="eyebrow">Inofficiell förhandsbedömning</p>
-        {r.status === "graded" && r.gradeRange ? (
-          <>
-            <p className="grade" data-testid="grade">
-              {fmtRange(r.gradeRange)}
-              <span className="grade-of">/10</span>
-            </p>
-            <p className="grade-note dim small">Uppskattat intervall, ingen officiell grade och ingen sannolikhet.</p>
-          </>
+        <p className="eyebrow">Unofficial pre-assessment</p>
+        <RarityBadge range={r.status === "graded" ? r.gradeRange : null} />
+        {r.status === "graded" ? (
+          <p className="grade-note dim small">An estimated range, not an official grade and not a probability.</p>
         ) : (
-          <>
-            <p className="grade abstain" data-testid="grade">
-              Ingen grade
-            </p>
-            <p className="abstain-reason">{r.abstainReason}</p>
-          </>
+          <p className="abstain-reason">{r.abstainReason}</p>
         )}
         {r.summary && <p className="summary">{r.summary}</p>}
       </section>
@@ -107,7 +96,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
                     onClick={() => goTo(f.id, f.image)}
                     data-testid={`finding-${f.id}`}
                   >
-                    <span className="finding-num mono">{numbers.get(f.id)}</span>
+                    <span className="finding-num">{numbers.get(f.id)}</span>
                     <span className="finding-body">
                       <span className="finding-title">{f.title}</span>
                       <span className="finding-meta small">
@@ -116,7 +105,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
                         {f.kind === "defect" && <> · {SEVERITY_LABEL[f.severity]}</>}
                       </span>
                       {f.description && <span className="finding-desc small">{f.description}</span>}
-                      {!f.box && <span className="small dim">Ingen exakt ruta angiven.</span>}
+                      {!f.box && <span className="small dim">No exact spot given.</span>}
                     </span>
                   </button>
                 </li>
@@ -125,17 +114,19 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
           </section>
         );
       })}
-      {r.findings.length === 0 && <p className="dim">Inga specifika fynd rapporterades.</p>}
+      {r.findings.length === 0 && <p className="dim">No specific findings were reported.</p>}
 
       <section>
-        <h3 className="h3">Delbedömningar</h3>
+        <h3 className="h3">Subgrades</h3>
         <div className="subgrades">
           {(Object.keys(SUBGRADE_LABELS) as (keyof typeof SUBGRADE_LABELS)[]).map((k) => {
             const s = r.subgrades[k];
+            const energy = SUBGRADE_ENERGY[k];
             return (
-              <article key={k} className="subgrade">
+              <article key={k} className={`subgrade energy-card-${energy}`}>
                 <header>
-                  <span className="label">{SUBGRADE_LABELS[k]}</span>
+                  <EnergyIcon type={energy} />
+                  <span className="sub-label">{SUBGRADE_LABELS[k]}</span>
                   <span className="sub-range">{s.range ? fmtRange(s.range) : "–"}</span>
                 </header>
                 {k === "centering" && (
@@ -150,16 +141,16 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
                           {SLOT_LABELS[img.slot]}:{" "}
                           {lr || tb ? (
                             <>
-                              {lr && <>V/H {lr} </>}
-                              {tb && <>Ö/N {tb}</>}
+                              {lr && <>L/R {lr} </>}
+                              {tb && <>T/B {tb}</>}
                             </>
                           ) : (
-                            <span className="dim">kunde inte mätas{c.note ? ` (${c.note.replace(/\.$/, "")})` : ""}</span>
+                            <span className="dim">not measured{c.note ? ` (${c.note.replace(/\.$/, "")})` : ""}</span>
                           )}
                         </p>
                       );
                     })}
-                    <p className="dim">Mätt lokalt i bilden. Visas bara när mätningen var tillförlitlig.</p>
+                    <p className="dim">Measured on your phone. Only shown when the measurement was reliable.</p>
                   </div>
                 )}
                 <p className="small">{s.assessment}</p>
@@ -172,7 +163,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
 
       {r.hardToAssess.length > 0 && (
         <section>
-          <h3 className="h3">Svårt att bedöma från bilderna</h3>
+          <h3 className="h3">Hard to judge from photos</h3>
           <ul className="plain">
             {r.hardToAssess.map((h, i) => (
               <li key={i}>
@@ -185,7 +176,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
 
       {r.imageIssues.length > 0 && (
         <section>
-          <h3 className="h3">Bilder att ta om</h3>
+          <h3 className="h3">Photos to retake</h3>
           <ul className="plain">
             {r.imageIssues.map((h, i) => (
               <li key={i} className="issue warn">
@@ -198,7 +189,7 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
             ))}
           </ul>
           <button className="btn" onClick={onRetake}>
-            Ta om bilder
+            Retake photos
           </button>
         </section>
       )}
@@ -209,43 +200,43 @@ export function ResultScreen({ assessment: a, saved, onBack, backLabel, onNew, o
       <section className="meta mono small">
         <p>{fmtDate(a.createdAt)}</p>
         <p>
-          {a.demo ? "Demoläge, ingen modell" : `Modell: ${modelLabel}${a.servedBy && !a.servedBy.startsWith(a.model) ? ` (svarade: ${a.servedBy})` : ""}`}
+          {a.demo ? "Demo mode, no model" : `Model: ${modelLabel}${a.servedBy && !a.servedBy.startsWith(a.model) ? ` (answered by: ${a.servedBy})` : ""}`}
         </p>
         {a.usage && (
           <p>
-            {a.usage.inputTokens.toLocaleString("sv-SE")} tokens in · {a.usage.outputTokens.toLocaleString("sv-SE")} ut
-            {a.costSek != null && <> · ≈ {fmtSek(a.costSek)} enligt listpris</>}
+            {a.usage.inputTokens.toLocaleString("en-US")} tokens in · {a.usage.outputTokens.toLocaleString("en-US")} out
+            {a.costUsd != null && <> · ≈ {fmtUsd(a.costUsd)} at list price</>}
           </p>
         )}
-        <p className="dim">Öppnas sparat resultat görs inga nya anrop.</p>
+        <p className="dim">Opening a saved result makes no new requests.</p>
       </section>
 
       <div className="row stack-sm">
         <button className="btn primary" onClick={onNew}>
-          Ny bedömning
+          Grade another card
         </button>
         {r.imageIssues.length === 0 && (
           <button className="btn" onClick={onRetake}>
-            Ta om bilder
+            Retake photos
           </button>
         )}
         {saved && (
           <button
             className="btn danger-ghost"
             onClick={() => {
-              if (confirm("Radera bedömningen och dess bilder från enheten?")) onDelete();
+              if (confirm("Delete this result and its photos from your device?")) onDelete();
             }}
             data-testid="delete"
           >
-            Radera bedömning
+            Delete result
           </button>
         )}
       </div>
 
       <footer className="fineprint">
         <p>
-          Bedömningen bygger på foton och kan missa saker som syns först i handen eller i lupp: mikrorepor, tryckpunkter,
-          böjning, tjocklek och äkthet. Den ersätter inte en riktig gradering.
+          This assessment is based on photos and can miss things you only notice in hand or under a loupe: micro scratches,
+          print dots, bending, thickness and authenticity. It does not replace a real grading.
         </p>
       </footer>
     </main>
@@ -261,25 +252,23 @@ function CardEditor({ card, onSave }: { card: CardIdentity; onSave: (c: CardIden
   };
   return (
     <section className="form-block">
-      <h3 className="h3">Kortet</h3>
-      <p className="small dim">
-        Avläst från bilden ({CONFIDENCE_LABEL[card.confidence]}). Rätta gärna. Okänt kort går också bra.
-      </p>
+      <h3 className="h3">The card</h3>
+      <p className="small dim">Read from the photo ({CONFIDENCE_LABEL[card.confidence]}). Fix anything that is wrong. Unknown cards are fine too.</p>
       <div className="grid2">
         <label>
-          <span className="label">Namn</span>
-          <input className="input" value={c.name} onChange={(e) => set({ name: e.target.value })} placeholder="Okänt" data-testid="card-name" />
+          <span className="label">Name</span>
+          <input className="input" value={c.name} onChange={(e) => set({ name: e.target.value })} placeholder="Unknown" data-testid="card-name" />
         </label>
         <label>
-          <span className="label">Nummer</span>
-          <input className="input mono" value={c.number} onChange={(e) => set({ number: e.target.value })} placeholder="t.ex. 025/165" />
+          <span className="label">Number</span>
+          <input className="input mono" value={c.number} onChange={(e) => set({ number: e.target.value })} placeholder="e.g. 025/165" />
         </label>
         <label>
           <span className="label">Set</span>
-          <input className="input" value={c.setName} onChange={(e) => set({ setName: e.target.value })} placeholder="Okänt" />
+          <input className="input" value={c.setName} onChange={(e) => set({ setName: e.target.value })} placeholder="Unknown" />
         </label>
         <label>
-          <span className="label">Språk</span>
+          <span className="label">Language</span>
           <select className="input" value={c.language} onChange={(e) => set({ language: e.target.value as CardLanguage })}>
             {(Object.keys(LANGUAGES) as CardLanguage[]).map((l) => (
               <option key={l} value={l}>
@@ -297,7 +286,7 @@ function CardEditor({ card, onSave }: { card: CardIdentity; onSave: (c: CardIden
         }}
         data-testid="save-card"
       >
-        {state === "saved" ? "✓ Sparat" : "Spara uppgifter"}
+        {state === "saved" ? "✓ Saved" : "Save details"}
       </button>
     </section>
   );
@@ -320,15 +309,15 @@ function ActualGradeForm({
   const valid = grade !== "" && g >= 1 && g <= 10 && Math.round(g * 2) === g * 2;
 
   const verdict = (a: ActualGrade) => {
-    if (!range) return "Ingen uppskattning att jämföra med.";
-    if (a.grade < range.low) return `${fmtGrade(range.low - a.grade)} under uppskattningen.`;
-    if (a.grade > range.high) return `${fmtGrade(a.grade - range.high)} över uppskattningen.`;
-    return "Inom uppskattningen.";
+    if (!range) return "No estimate to compare with.";
+    if (a.grade < range.low) return `${fmtGrade(range.low - a.grade)} below the estimate.`;
+    if (a.grade > range.high) return `${fmtGrade(a.grade - range.high)} above the estimate.`;
+    return "Within the estimate.";
   };
 
   return (
     <section className="form-block">
-      <h3 className="h3">Faktisk grade</h3>
+      <h3 className="h3">Actual grade</h3>
       {actual && !open ? (
         <div className="actual" data-testid="actual">
           <p className="actual-grade">
@@ -336,14 +325,14 @@ function ActualGradeForm({
             {actual.date && <span className="dim small"> · {actual.date}</span>}
           </p>
           <p className="small">
-            Uppskattat {fmtRange(range)}. {verdict(actual)}
+            Estimated {fmtRange(range)}. {verdict(actual)}
           </p>
           <div className="row">
             <button className="btn small" onClick={() => setOpen(true)}>
-              Ändra
+              Edit
             </button>
             <button className="btn small danger-ghost" onClick={() => onSave(null)}>
-              Ta bort
+              Remove
             </button>
           </div>
         </div>
@@ -358,7 +347,7 @@ function ActualGradeForm({
           }}
         >
           <label>
-            <span className="label">Bolag</span>
+            <span className="label">Company</span>
             <select className="input" value={company} onChange={(e) => setCompany(e.target.value)}>
               {COMPANIES.map((c) => (
                 <option key={c}>{c}</option>
@@ -366,34 +355,34 @@ function ActualGradeForm({
             </select>
           </label>
           <label>
-            <span className="label">Betyg (1–10)</span>
+            <span className="label">Grade (1–10)</span>
             <input
               className="input mono"
               inputMode="decimal"
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
-              placeholder="t.ex. 8 eller 8,5"
+              placeholder="e.g. 8 or 8.5"
               data-testid="actual-grade"
             />
           </label>
           <label>
-            <span className="label">Datum (valfritt)</span>
+            <span className="label">Date (optional)</span>
             <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
           <div className="row end span2">
             <button type="button" className="btn ghost small" onClick={() => setOpen(false)}>
-              Avbryt
+              Cancel
             </button>
             <button type="submit" className="btn small primary" disabled={!valid} data-testid="actual-save">
-              Spara
+              Save
             </button>
           </div>
         </form>
       ) : (
         <>
-          <p className="small dim">Skickar du in kortet senare kan du lägga in betyget här och jämföra med uppskattningen.</p>
+          <p className="small dim">If you send the card in later, add the real grade here and compare it with the estimate.</p>
           <button className="btn small" onClick={() => setOpen(true)} data-testid="actual-add">
-            Lägg till faktisk grade
+            Add actual grade
           </button>
         </>
       )}

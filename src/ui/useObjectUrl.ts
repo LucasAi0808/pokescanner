@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-/** Skapar en object-URL för en Blob och släpper den när komponenten avmonteras. */
+/** Creates an object URL for a Blob and revokes it when the component unmounts. */
 export function useObjectUrl(blob: Blob | null | undefined): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {

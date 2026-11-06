@@ -9,10 +9,10 @@ const REQUIRED: ImageSlot[] = ["front", "back"];
 const EXTRA: ImageSlot[] = ["closeup", "raking"];
 
 const SLOT_HELP: Record<ImageSlot, string> = {
-  front: "Hela framsidan, rakt ovanifrån.",
-  back: "Hela baksidan, rakt ovanifrån.",
-  closeup: "Gå nära ett hörn, en kant eller något du är osäker på.",
-  raking: "Låt ljuset falla snett över ytan så att repor och bucklor syns.",
+  front: "The whole front, straight from above.",
+  back: "The whole back, straight from above.",
+  closeup: "Get close to a corner, an edge or anything you are unsure about.",
+  raking: "Let the light fall across the surface at an angle so scratches and dents show.",
 };
 
 interface Props {
@@ -43,16 +43,16 @@ export function CaptureScreen(p: Props) {
     <main className="screen capture">
       <nav className="topbar">
         <button className="link" onClick={p.onBack}>
-          ‹ Start
+          ‹ Home
         </button>
-        <span className="mono dim">{p.demo ? "DEMOLÄGE" : "GRADERA KORT"}</span>
+        <span className="pill">{p.demo ? "Demo mode" : "Grade a card"}</span>
       </nav>
 
-      <h2 className="h2">Bilder</h2>
+      <h2 className="h2">Your photos</h2>
       {p.demo && (
         <p className="notice info">
-          Demoläge: exempelbilder på ett fiktivt kort är redan ifyllda. Ingen bild skickas någonstans och resultatet är
-          förskrivet.
+          Demo mode: example photos of a fictional card are already filled in. Nothing is sent anywhere and the result is
+          pre-written.
         </p>
       )}
       {p.notice && <p className="notice info">{p.notice}</p>}
@@ -60,13 +60,13 @@ export function CaptureScreen(p: Props) {
         <div className="notice error" role="alert">
           <p>{p.error}</p>
           <button className="link" onClick={p.onDismissError}>
-            Stäng
+            Close
           </button>
         </div>
       )}
 
       <button className="guide-toggle" onClick={() => setShowGuide((v) => !v)} aria-expanded={showGuide}>
-        {showGuide ? "Dölj" : "Visa"} hur du placerar kortet
+        {showGuide ? "Hide" : "Show"} how to position the card
       </button>
       {showGuide && <CardGuide />}
 
@@ -78,7 +78,7 @@ export function CaptureScreen(p: Props) {
 
       {showExtra ? (
         <>
-          <h3 className="h3">Extra bilder (valfritt)</h3>
+          <h3 className="h3">Extra photos (optional)</h3>
           <div className="slots">
             {EXTRA.map((s) => (
               <SlotCard key={s} slot={s} image={p.images[s]} busy={!!p.busy[s]} onFile={p.onFile} onRemove={p.onRemove} />
@@ -87,20 +87,20 @@ export function CaptureScreen(p: Props) {
         </>
       ) : (
         <button className="btn ghost" onClick={() => setShowExtra(true)}>
-          + Lägg till närbild eller bild i snett ljus
+          + Add a close-up or angled-light photo
         </button>
       )}
 
       <div className="sticky-bar">
         <p className="bar-status">
           {!ready
-            ? `Lägg till ${missing.join(" och ")} för att fortsätta.`
+            ? `Add the ${missing.join(" and ")} to continue.`
             : warnings > 0
-              ? `${warnings} ${warnings === 1 ? "varning" : "varningar"} på bilderna. Du kan ta om eller analysera ändå.`
-              : "Bilderna ser bra ut."}
+              ? `${warnings} ${warnings === 1 ? "warning" : "warnings"} on your photos. Retake or analyze anyway.`
+              : "Your photos look good."}
         </p>
         <button className="btn primary" disabled={!ready || anyBusy} onClick={p.onAnalyze}>
-          {warnings > 0 && ready ? "Analysera ändå" : "Analysera"}
+          {warnings > 0 && ready ? "Analyze anyway" : "Analyze"}
         </button>
       </div>
     </main>
@@ -135,7 +135,7 @@ function SlotCard({ slot, required, image, busy, onFile, onRemove }: SlotProps) 
       <header className="slot-head">
         <h3>
           {SLOT_LABELS[slot]}
-          {required && <span className="req">krävs</span>}
+          {required && <span className="req">required</span>}
         </h3>
         <p className="dim small">{SLOT_HELP[slot]}</p>
       </header>
@@ -145,12 +145,12 @@ function SlotCard({ slot, required, image, busy, onFile, onRemove }: SlotProps) 
 
       {busy ? (
         <div className="slot-busy">
-          <span className="spinner" /> Kontrollerar bilden…
+          <span className="spinner" /> Checking the photo…
         </div>
       ) : image && url ? (
         <div className="slot-body">
           <div className="thumb">
-            <img src={url} alt={`${SLOT_LABELS[slot]}, förhandsvisning`} />
+            <img src={url} alt={`${SLOT_LABELS[slot]} preview`} />
             {q?.card && (
               <svg className="thumb-outline" viewBox={`0 0 ${q.width} ${q.height}`} preserveAspectRatio="none">
                 <polygon
@@ -162,7 +162,7 @@ function SlotCard({ slot, required, image, busy, onFile, onRemove }: SlotProps) 
             )}
           </div>
           <div className="slot-info">
-            {q && q.issues.length === 0 && <p className="ok small">✓ Bilden ser bra ut.</p>}
+            {q && q.issues.length === 0 && <p className="ok small">✓ Looks good.</p>}
             {q?.issues.map((i) => (
               <div key={i.code} className={`issue ${i.level}`} data-testid={`issue-${slot}-${i.code}`}>
                 <p className="issue-msg">{i.message}</p>
@@ -171,36 +171,36 @@ function SlotCard({ slot, required, image, busy, onFile, onRemove }: SlotProps) 
             ))}
             {(slot === "front" || slot === "back") && (
               <p className="mono small centering-line">
-                Centrering:{" "}
+                Centering:{" "}
                 {lr || tb ? (
                   <>
-                    {lr && <>V/H {lr}</>} {tb && <>Ö/N {tb}</>}
+                    {lr && <>L/R {lr}</>} {tb && <>T/B {tb}</>}
                   </>
                 ) : (
-                  <span className="dim">kunde inte mätas</span>
+                  <span className="dim">could not be measured</span>
                 )}
               </p>
             )}
             <div className="row">
               <button className="btn small" onClick={() => camera.current?.click()}>
-                Ta om
+                Retake
               </button>
               <button className="btn small" onClick={() => library.current?.click()}>
-                Byt bild
+                Replace
               </button>
               <button className="btn small danger-ghost" onClick={() => onRemove(slot)}>
-                Ta bort
+                Remove
               </button>
             </div>
           </div>
         </div>
       ) : (
         <div className="row">
-          <button className="btn" onClick={() => camera.current?.click()}>
-            Ta foto
+          <button className="btn primary" onClick={() => camera.current?.click()}>
+            Take photo
           </button>
-          <button className="btn ghost" onClick={() => library.current?.click()}>
-            Välj bild
+          <button className="btn" onClick={() => library.current?.click()}>
+            Choose photo
           </button>
         </div>
       )}

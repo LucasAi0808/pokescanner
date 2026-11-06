@@ -1,5 +1,5 @@
 import type { Assessment } from "../storage/db";
-import { fmtDate, fmtGrade, fmtRange } from "../ui/format";
+import { fmtDate, fmtGrade, fmtRange, rarityOf } from "../ui/format";
 import { useObjectUrl } from "../ui/useObjectUrl";
 
 interface Props {
@@ -14,14 +14,14 @@ export function HistoryScreen({ items, onOpen, onBack, onDeleteAll }: Props) {
     <main className="screen history">
       <nav className="topbar">
         <button className="link" onClick={onBack}>
-          ‹ Start
+          ‹ Home
         </button>
-        <span className="mono dim">{items.length} SPARADE</span>
+        <span className="pill">{items.length} saved</span>
       </nav>
-      <h2 className="h2">Historik</h2>
-      <p className="small dim">Sparas bara på den här enheten. Att öppna en bedömning kostar inget.</p>
+      <h2 className="h2">My cards</h2>
+      <p className="small dim">Saved on this device only. Opening a saved result costs nothing.</p>
       {items.length === 0 ? (
-        <p className="empty">Inga bedömningar ännu.</p>
+        <p className="empty">No cards graded yet.</p>
       ) : (
         <ul className="history-list">
           {items.map((a) => (
@@ -35,10 +35,10 @@ export function HistoryScreen({ items, onOpen, onBack, onDeleteAll }: Props) {
         <button
           className="btn danger-ghost"
           onClick={() => {
-            if (confirm("Radera alla sparade bedömningar och bilder från enheten?")) onDeleteAll();
+            if (confirm("Delete all saved results and photos from this device?")) onDeleteAll();
           }}
         >
-          Radera allt
+          Delete all
         </button>
       )}
     </main>
@@ -47,12 +47,13 @@ export function HistoryScreen({ items, onOpen, onBack, onDeleteAll }: Props) {
 
 function HistoryRow({ a, onOpen }: { a: Assessment; onOpen: () => void }) {
   const url = useObjectUrl(a.images[0]?.blob);
+  const r = a.result.status === "graded" ? rarityOf(a.result.gradeRange) : null;
   return (
     <button className="history-row" onClick={onOpen} data-testid="history-row">
       <span className="history-thumb">{url && <img src={url} alt="" />}</span>
       <span className="history-body">
         <span className="history-name">
-          <span className="history-name-text">{a.card.name || "Okänt kort"}</span>
+          <span className="history-name-text">{a.card.name || "Unknown card"}</span>
           {a.demo && <span className="badge demo">DEMO</span>}
         </span>
         <span className="small dim mono">
@@ -60,11 +61,14 @@ function HistoryRow({ a, onOpen }: { a: Assessment; onOpen: () => void }) {
         </span>
         {a.actual && (
           <span className="small">
-            Faktisk: {a.actual.company} {fmtGrade(a.actual.grade)}
+            Actual: {a.actual.company} {fmtGrade(a.actual.grade)}
           </span>
         )}
       </span>
-      <span className="history-grade">{a.result.status === "graded" ? fmtRange(a.result.gradeRange) : "–"}</span>
+      <span className="history-grade">
+        <span className="history-stars">{r ? "★".repeat(r.stars) : ""}</span>
+        {a.result.status === "graded" ? fmtRange(a.result.gradeRange) : "–"}
+      </span>
     </button>
   );
 }

@@ -12,12 +12,12 @@ export interface ViewerImage {
 interface Props {
   images: ViewerImage[];
   findings: Finding[];
-  /** Fyndnummer att visa i markörerna (samma som i listan). */
+  /** Finding numbers shown in the markers (same as in the list). */
   numbers: Map<string, number>;
   activeSlot: ImageSlot;
   onSlotChange: (s: ImageSlot) => void;
   focusId: string | null;
-  /** Ökas för att zooma till samma fynd igen. */
+  /** Incremented to zoom to the same finding again. */
   focusNonce: number;
 }
 
@@ -62,10 +62,10 @@ export function ImageViewer({ images, findings, numbers, activeSlot, onSlotChang
     [size],
   );
 
-  // Byt bild => återställ zoom.
+  // Switching image resets the zoom.
   useEffect(() => setT(ID), [activeSlot]);
 
-  // Zooma till valt fynd.
+  // Zoom to the selected finding.
   useEffect(() => {
     const f = findings.find((x) => x.id === focusId);
     if (!f || f.image !== activeSlot) return;
@@ -158,7 +158,7 @@ export function ImageViewer({ images, findings, numbers, activeSlot, onSlotChang
   return (
     <div className="viewer">
       {images.length > 1 && (
-        <div className="viewer-tabs" role="tablist" aria-label="Välj bild">
+        <div className="viewer-tabs" role="tablist" aria-label="Choose photo">
           {images.map((i) => {
             const n = findings.filter((f) => f.image === i.slot).length;
             return (
@@ -214,12 +214,12 @@ export function ImageViewer({ images, findings, numbers, activeSlot, onSlotChang
         <span className="corner br" />
       </div>
       <div className="viewer-tools">
-        <span className="mono dim">{(t.s * 100).toFixed(0)} %</span>
+        <span className="mono dim">{(t.s * 100).toFixed(0)}%</span>
         <div className="viewer-buttons">
-          <button className="icon-btn" onClick={() => step(1 / 1.6)} aria-label="Zooma ut">
+          <button className="icon-btn" onClick={() => step(1 / 1.6)} aria-label="Zoom out">
             −
           </button>
-          <button className="icon-btn" onClick={() => step(1.6)} aria-label="Zooma in">
+          <button className="icon-btn" onClick={() => step(1.6)} aria-label="Zoom in">
             +
           </button>
           <button
@@ -229,11 +229,11 @@ export function ImageViewer({ images, findings, numbers, activeSlot, onSlotChang
               setT(ID);
             }}
           >
-            Hela bilden
+            Fit
           </button>
         </div>
       </div>
-      <p className="hint">Nyp eller dubbeltryck för att zooma. Tryck på ett fynd nedan för att hoppa dit.</p>
+      <p className="hint">Pinch or double-tap to zoom. Tap a finding below to jump to it.</p>
     </div>
   );
 }

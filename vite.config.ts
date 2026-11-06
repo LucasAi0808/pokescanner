@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// base "./" gör att bygget fungerar både lokalt och under en GitHub Pages-undersökväg.
+// base "./" makes the build work both locally and under a GitHub Pages sub-path.
 export default defineConfig({
   base: "./",
   plugins: [react()],
