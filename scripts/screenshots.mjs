@@ -49,7 +49,7 @@ try {
 
   await page.getByTestId("booster-open").waitFor();
   await shot("06-booster-pack");
-  await page.getByTestId("booster-open").click();
+  await page.getByTestId("booster-open").click({ force: true }); // the pack wiggles on purpose
   await page.getByTestId("booster-continue").waitFor();
   await page.waitForTimeout(500);
   await shot("07-booster-reveal");

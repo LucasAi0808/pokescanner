@@ -27,7 +27,7 @@ test("demo mode works without a key and without network requests", async ({ page
   await expect(page.getByRole("dialog", { name: "Before the analysis" })).toHaveCount(0); // no consent sheet in demo mode
 
   // The fresh result opens like a booster pack.
-  await page.getByTestId("booster-open").click();
+  await page.getByTestId("booster-open").click({ force: true }); // the pack wiggles on purpose
   await expect(page.getByTestId("booster").getByTestId("grade")).toHaveText(/7–8/);
   await expect(page.getByTestId("rarity").locator(".star.on")).toHaveCount(3);
   await page.getByTestId("booster-continue").click();
@@ -124,7 +124,7 @@ test("a top grade gets four stars and the holo foil", async ({ page }) => {
   await uploadPair(page);
   await page.getByRole("button", { name: /^Analyze/ }).click();
   await analyzeWithKey(page);
-  await page.getByTestId("booster-open").click();
+  await page.getByTestId("booster-open").click({ force: true }); // the pack wiggles on purpose
   await expect(page.getByTestId("rarity").locator(".star.on")).toHaveCount(4);
   await expect(page.getByTestId("booster").locator(".holo")).toHaveCount(1);
   await expect(page.getByTestId("booster")).toContainText("Mint candidate");
