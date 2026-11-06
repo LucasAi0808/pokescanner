@@ -1093,9 +1093,20 @@ p {
 }
 .history-name {
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.history-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+.history-name .badge {
+  margin-left: 0;
+  flex-shrink: 0;
 }
 .history-grade {
   font-family: var(--serif);

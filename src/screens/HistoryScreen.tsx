@@ -52,7 +52,7 @@ function HistoryRow({ a, onOpen }: { a: Assessment; onOpen: () => void }) {
       <span className="history-thumb">{url && <img src={url} alt="" />}</span>
       <span className="history-body">
         <span className="history-name">
-          {a.card.name || "Okänt kort"}
+          <span className="history-name-text">{a.card.name || "Okänt kort"}</span>
           {a.demo && <span className="badge demo">DEMO</span>}
         </span>
         <span className="small dim mono">

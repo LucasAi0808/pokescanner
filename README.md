@@ -4,6 +4,8 @@ Fota ett Pokémonkort med mobilen och få en motiverad, inofficiell uppskattning
 
 Gratis, öppen källkod och utan konto. Du använder din egen API-nyckel, som bara finns i minnet medan sidan är öppen.
 
+**Prova appen:** [lucasai0808.github.io/pokescanner](https://lucasai0808.github.io/pokescanner/), öppna den i Safari på iPhone och tryck Prova demo om du inte har någon nyckel.
+
 <p>
   <img src="docs/screenshots/06-resultat.png" alt="Resultatsidan med uppskattat intervall 7–8" width="260" />
   <img src="docs/screenshots/07-resultat-zoom.png" alt="Bildvisaren har zoomat in på en vit prick i baksidans hörn" width="260" />
